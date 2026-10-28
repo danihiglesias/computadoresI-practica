@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asignación de señales a cables</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Lato:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: columna de lectura (68 ch) con el simulador a ancho completo; tema único claro del sistema Computadores */
+:root {
+  --papel:#f8f4ec; --papel-elevado:#ffffff; --papel-hundido:#efe8db; --piedra:#e3d9c8; --piedra-fuerte:#857869;
+  --tinta:#2a2420; --tinta-suave:#6b5f55;
+  --vitor:#a8192b; --vitor-suave:#f7dddc; --sobre-vitor:#ffffff;
+  --dorado:#d9a441; --dorado-texto:#8a5a0a; --dorado-suave:#fbeed2;
+  --centenario:#385e9d; --centenario-suave:#dde6f4; --sobre-centenario:#ffffff;
+  --correcto:#1f6f43; --correcto-suave:#dcefe2;
+  --incorrecto:var(--vitor); --incorrecto-suave:var(--vitor-suave);
+  --foco:var(--centenario); --diag-bus:var(--tinta-suave);
+  --bit-uno:var(--vitor); --bit-cero:var(--papel-hundido);
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
+  --radius-sm:6px; --radius-md:12px; --radius-lg:20px; --radius-pill:999px;
+  --sombra-tarjeta:0 1px 2px rgba(42,36,32,.06), 0 4px 12px rgba(42,36,32,.06);
+  --font-display:"Bricolage Grotesque","Lato",system-ui,sans-serif;
+  --font-sans:"Lato",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme: light;
+}
+* { box-sizing:border-box; }
+body { background:var(--papel); color:var(--tinta); font-family:var(--font-sans); font-size:17px; line-height:27px; margin:0;
+  padding-block:var(--space-6) var(--space-8); padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+.wrap { max-width:960px; margin:0 auto; display:flex; flex-direction:column; gap:var(--space-7); }
+.prosa { max-width:68ch; }
+.prosa p { margin:0 0 var(--space-4); }
+h1,h2,h3 { font-family:var(--font-display); text-wrap:balance; margin:0; }
+h1 { font-size:40px; line-height:44px; font-weight:700; letter-spacing:-.02em; margin:var(--space-2) 0 var(--space-4); }
+h2 { font-size:28px; line-height:34px; font-weight:600; letter-spacing:-.01em; margin-bottom:var(--space-4); display:inline-block; box-shadow:inset 0 -4px 0 var(--dorado); }
+h3 { font-size:20px; line-height:26px; font-weight:600; }
+.etiqueta { display:inline-flex; align-items:center; gap:var(--space-1); font-size:12px; line-height:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px var(--space-2); border-radius:var(--radius-pill); background:var(--vitor-suave); color:var(--vitor); }
+.etiqueta-neutra { background:var(--papel-hundido); color:var(--tinta-suave); }
+.etiqueta-centenario { background:var(--centenario-suave); color:var(--centenario); }
+.cabecera { display:flex; align-items:center; gap:var(--space-3); }
+.cabecera img { width:40px; height:40px; }
+code { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:15px; background:var(--papel-hundido); padding:1px 6px; border-radius:var(--radius-sm); }
+pre { font-family:var(--font-mono); font-size:15px; line-height:24px; background:var(--papel-hundido); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); margin:0; overflow-x:auto; }
+pre .kw { color:var(--vitor); font-weight:600; } pre .id { color:var(--centenario); } pre .cm { color:var(--tinta-suave); } pre .off { opacity:.35; text-decoration:line-through; }
+
+.nota { display:grid; grid-template-columns:20px 1fr; gap:var(--space-3); padding:var(--space-4); border-radius:var(--radius-md); background:var(--papel-elevado); border:1px solid var(--piedra); font-size:15px; line-height:22px; max-width:68ch; }
+.nota svg { width:20px; height:20px; margin-top:1px; }
+.nota b { display:block; margin-bottom:2px; }
+.nota-idea { background:var(--centenario-suave); border-color:var(--centenario-suave); color:var(--centenario); }
+.nota-cuidado { background:var(--dorado-suave); border-color:var(--dorado-suave); color:var(--dorado-texto); }
+.nota-correcto { background:var(--correcto-suave); border-color:var(--correcto-suave); color:var(--correcto); }
+.nota-incorrecto { background:var(--incorrecto-suave); border-color:var(--incorrecto-suave); color:var(--incorrecto); }
+.nota .cuerpo { color:var(--tinta); }
+
+.panel { background:var(--papel-elevado); border-radius:var(--radius-lg); box-shadow:var(--sombra-tarjeta); padding:var(--space-5); display:flex; flex-direction:column; gap:var(--space-5); }
+.grid2 { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:var(--space-5); align-items:start; }
+@media (max-width:720px) { .grid2 { grid-template-columns:1fr; } }
+.escena { min-width:0; } .escena svg { width:100%; height:auto; display:block; }
+.derecha { display:flex; flex-direction:column; gap:var(--space-4); min-width:0; }
+.linea { stroke:var(--diag-bus); stroke-width:3; fill:none; stroke-linecap:round; transition:stroke 250ms ease-out; }
+.linea.off { stroke:var(--piedra); stroke-dasharray:6 8; }
+.caja { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2.5; rx:12; }
+.caja.reg { stroke:var(--vitor); }
+.caja.wire { stroke:var(--centenario); }
+.rotulo { font-family:var(--font-display); font-size:18px; font-weight:600; fill:var(--tinta); }
+.sub { font-family:var(--font-sans); font-size:12px; fill:var(--tinta-suave); letter-spacing:.08em; text-transform:uppercase; font-weight:700; }
+.celda { rx:6; }
+.celda.uno { fill:var(--vitor); } .celda.cero { fill:var(--papel-hundido); stroke:var(--piedra); stroke-width:1.5; } .celda.z { fill:var(--papel-elevado); stroke:var(--piedra-fuerte); stroke-width:1.5; stroke-dasharray:4 4; }
+.celda-txt { font-family:var(--font-mono); font-size:20px; font-weight:600; }
+.celda-txt.uno { fill:var(--sobre-vitor); } .celda-txt.cero { fill:var(--tinta); } .celda-txt.z { fill:var(--tinta-suave); }
+.pulso { fill:var(--dorado); }
+.interruptor { cursor:pointer; }
+.interruptor rect { fill:var(--papel-hundido); stroke:var(--piedra-fuerte); stroke-width:1.5; rx:14; }
+.interruptor.on rect { fill:var(--correcto-suave); stroke:var(--correcto); }
+.interruptor circle { fill:var(--tinta-suave); transition:cx 200ms ease-out; }
+.interruptor.on circle { fill:var(--correcto); }
+.interruptor text { font:700 12px var(--font-sans); fill:var(--tinta); letter-spacing:.06em; }
+
+.controles { display:flex; flex-direction:column; gap:var(--space-3); }
+.bitfila { display:flex; align-items:flex-end; gap:var(--space-1); }
+.bitfila .sep { width:var(--space-2); }
+.bitctl { display:inline-flex; flex-direction:column; align-items:center; gap:2px; }
+.bitctl span { font:400 11px/14px var(--font-mono); color:var(--tinta-suave); }
+.bit { width:40px; height:44px; border-radius:var(--radius-sm); border:1px solid var(--piedra); background:var(--bit-cero); color:var(--tinta); font:600 20px/28px var(--font-mono); cursor:pointer; transition:background 200ms ease-out, color 200ms ease-out; padding:0; }
+.bit.uno { background:var(--bit-uno); border-color:var(--bit-uno); color:var(--sobre-vitor); }
+.bit:focus-visible, .boton:focus-visible, .pestana:focus-visible, .interruptor:focus-visible { outline:2px solid var(--foco); outline-offset:2px; }
+.valor-eq { font-family:var(--font-mono); font-size:15px; color:var(--tinta-suave); margin-left:var(--space-2); align-self:center; }
+.boton { font:700 15px/20px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.boton-primario { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.boton-discreto { background:transparent; border-color:transparent; color:var(--vitor); }
+.fila { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; }
+.pestanas { display:flex; flex-wrap:wrap; gap:var(--space-2); }
+.pestana { font:700 15px/20px var(--font-sans); padding:var(--space-2) var(--space-3); border-radius:var(--radius-pill); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.pestana[aria-selected="true"] { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.pestana code { background:transparent; padding:0; font-weight:600; color:inherit; }
+.lectura { font-size:15px; line-height:22px; color:var(--tinta-suave); margin:0; min-height:44px; }
+.lectura strong { color:var(--tinta); }
+
+/* cronograma */
+.crono { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-3); overflow-x:auto; background:var(--papel-elevado); }
+.crono svg { display:block; min-width:520px; width:100%; height:auto; }
+.onda { fill:none; stroke-width:2.5; stroke-linejoin:round; }
+.onda.r { stroke:var(--vitor); } .onda.w { stroke:var(--centenario); } .onda.z { stroke:var(--piedra-fuerte); stroke-dasharray:4 4; }
+.nombre-onda { font-family:var(--font-mono); font-size:13px; font-weight:600; }
+.val-onda { font-family:var(--font-mono); font-size:11px; fill:var(--tinta-suave); }
+.rejilla { stroke:var(--piedra); stroke-width:1; }
+.tick { font-family:var(--font-mono); font-size:11px; fill:var(--tinta-suave); }
+
+.resumen { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--space-3); }
+.tarjeta { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); background:var(--papel-elevado); font-size:15px; line-height:22px; }
+.tarjeta code { display:inline-block; margin-bottom:var(--space-2); font-weight:600; color:var(--vitor); }
+.tarjeta.azul code { color:var(--centenario); }
+.comparativa { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); max-width:68ch; }
+@media (max-width:600px) { .comparativa { grid-template-columns:1fr; } }
+.comparativa .tarjeta h3 { display:flex; align-items:center; gap:var(--space-2); margin-bottom:var(--space-2); }
+.comparativa ul { margin:0; padding-left:18px; }
+.comparativa li { margin-bottom:4px; }
+.reto { display:grid; gap:var(--space-4); }
+.pregunta { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--piedra); border-radius:var(--radius-md); background:var(--papel-elevado); }
+.opciones { display:flex; flex-wrap:wrap; gap:var(--space-2); }
+.opciones .boton[aria-pressed="true"] { background:var(--centenario); border-color:var(--centenario); color:var(--sobre-centenario); }
+.pie { font-size:13px; line-height:18px; color:var(--tinta-suave); }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+.nav-leccion{max-width:960px;margin:0 auto var(--space-5);display:flex;justify-content:space-between;gap:var(--space-3);font-size:14px;flex-wrap:wrap}.nav-leccion a{color:var(--centenario)}.nav-leccion span{color:var(--tinta-suave)}
+footer{max-width:960px;margin:48px auto 0;font-size:13px;line-height:18px;color:var(--tinta-suave)}footer a{color:var(--vitor)}
+</style>
+</head>
+<body>
+<nav class="nav-leccion" aria-label="Navegación de la lección"><a href="index.html">← Índice de la sesión 5</a><span>3 / 7</span><span><a href="contingencia-senales.html">← Contingencia de señales</a> · <a href="transceiver.html">Transceptor de bus →</a></span></nav>
+<div class="wrap">
+<header class="prosa">
+  <div class="cabecera">
+    <img alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%236b5f55'%3E%3Crect x='18' y='2' width='4' height='8' rx='1'/%3E%3Crect x='30' y='2' width='4' height='8' rx='1'/%3E%3Crect x='42' y='2' width='4' height='8' rx='1'/%3E%3Crect x='18' y='54' width='4' height='8' rx='1'/%3E%3Crect x='30' y='54' width='4' height='8' rx='1'/%3E%3Crect x='42' y='54' width='4' height='8' rx='1'/%3E%3Crect x='2' y='18' width='8' height='4' rx='1'/%3E%3Crect x='2' y='30' width='8' height='4' rx='1'/%3E%3Crect x='2' y='42' width='8' height='4' rx='1'/%3E%3Crect x='54' y='18' width='8' height='4' rx='1'/%3E%3Crect x='54' y='30' width='8' height='4' rx='1'/%3E%3Crect x='54' y='42' width='8' height='4' rx='1'/%3E%3C/g%3E%3Crect x='8' y='8' width='48' height='48' rx='12' fill='%23a8192b'/%3E%3Crect x='16' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='25' y='24' width='7' height='16' rx='2' fill='%23f7dddc' fill-opacity='.35'/%3E%3Crect x='34' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='43' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3C/svg%3E">
+    <span class="etiqueta">Computadores · Lógica digital</span>
+  </div>
+  <h1>Asignación de señales a cables</h1>
+  <p>Un registro (<code>reg</code>) guarda un valor. Un cable (<code>wire</code>) no guarda nada: solo transporta lo que alguien le pone encima. Para conectar permanentemente un registro a un cable se usa una <strong>asignación continua</strong>, la instrucción <code>assign</code>. Desde ese momento, el valor del registro se vuelca al cable <strong>continuamente</strong>: cada vez que el registro cambia, el cable cambia con él, sin que nadie tenga que volver a ejecutar nada.</p>
+  <pre><span class="kw">wire</span> <span class="id">w</span>; <span class="kw">reg</span> <span class="id">r</span>;
+
+<span class="kw">assign</span> <span class="id">w</span> = <span class="id">r</span>;</pre>
+</header>
+
+<section>
+  <h2>Simulador</h2>
+  <div class="panel">
+    <div class="pestanas" role="tablist" aria-label="Expresión asignada">
+      <button class="pestana" role="tab" data-exp="r" aria-selected="true"><code>assign w = r;</code></button>
+      <button class="pestana" role="tab" data-exp="not" aria-selected="false"><code>assign w = ~r;</code></button>
+      <button class="pestana" role="tab" data-exp="and" aria-selected="false"><code>assign w = r &amp; m;</code></button>
+      <button class="pestana" role="tab" data-exp="inc" aria-selected="false"><code>assign w = r + 1;</code></button>
+    </div>
+    <div class="grid2">
+      <div class="escena">
+        <svg id="svg" viewBox="0 0 480 250" role="img" aria-labelledby="svg-t"><title id="svg-t">Registro conectado a un cable mediante assign</title></svg>
+        <p class="lectura" id="lectura"></p>
+      </div>
+      <div class="derecha">
+        <div class="controles">
+          <div>
+            <span class="etiqueta">reg r</span>
+            <div class="bitfila" id="bits-r" style="margin-top:var(--space-2)"></div>
+          </div>
+          <div id="bloque-m" hidden>
+            <span class="etiqueta">reg m</span>
+            <div class="bitfila" id="bits-m" style="margin-top:var(--space-2)"></div>
+          </div>
+          <div>
+            <span class="etiqueta etiqueta-centenario">wire w</span>
+            <div class="bitfila" id="bits-w" style="margin-top:var(--space-2)"></div>
+          </div>
+        </div>
+        <div class="fila">
+          <button class="boton" id="tgl">Quitar el assign</button>
+          <button class="boton boton-discreto" id="aleatorio">Cambiar r al azar</button>
+        </div>
+        <pre id="verilog"></pre>
+      </div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:var(--space-2)">Cronograma</h3>
+      <p class="pie" style="margin:0 0 var(--space-2)">Cada cambio que haces queda registrado. Mira cómo <code>w</code> sigue a <code>r</code> en el mismo instante mientras el <code>assign</code> está activo, y cómo deja de hacerlo si lo quitas.</p>
+      <div class="crono"><svg id="crono" viewBox="0 0 640 150" role="img" aria-label="Cronograma de r y w"></svg></div>
+      <div class="fila" style="margin-top:var(--space-2)"><button class="boton boton-discreto" id="limpiar">Borrar el cronograma</button></div>
+    </div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Registro frente a cable</h2>
+  <div class="comparativa">
+    <div class="tarjeta">
+      <h3><span class="etiqueta">reg</span></h3>
+      <ul>
+        <li>Guarda un valor hasta que alguien lo cambie.</li>
+        <li>Se escribe dentro de bloques de procedimiento (<code>initial</code>, <code>always</code>) con <code>=</code> o <code>&lt;=</code>.</li>
+        <li>Si nadie lo escribe, conserva lo último (al arrancar, <code>x</code>).</li>
+      </ul>
+    </div>
+    <div class="tarjeta azul">
+      <h3><span class="etiqueta etiqueta-centenario">wire</span></h3>
+      <ul>
+        <li>No guarda nada: vale lo que le llega en cada instante.</li>
+        <li>Se le da valor con <code>assign</code> o conectándolo a la salida de una puerta o módulo.</li>
+        <li>Si nadie le llega, vale <code>z</code>.</li>
+      </ul>
+    </div>
+  </div>
+  <p style="margin-top:var(--space-4)">La palabra <code>assign</code> no es una orden que se ejecute una vez, como en un lenguaje de programación. Describe <em>hardware</em>: una conexión física que está ahí todo el tiempo. Por eso se escribe fuera de los bloques <code>initial</code> y <code>always</code>, al nivel del módulo.</p>
+  <div class="nota nota-idea">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 16h4"/></svg>
+    <div><b>Idea</b><div class="cuerpo">Lee <code>assign w = r;</code> como «soldar un cable entre la salida de r y w». Lo que haya a la derecha del igual puede ser una expresión entera (<code>~r</code>, <code>r &amp; m</code>, <code>r + 1</code>): entonces estás describiendo la lógica combinacional que hay entre medias.</div></div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Errores frecuentes</h2>
+  <div class="nota nota-cuidado">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
+    <div><b>Cuidado</b><div class="cuerpo">A la izquierda de <code>assign</code> solo puede ir una red (<code>wire</code>, <code>tri</code>…). Escribir <code>assign r = w;</code> con <code>r</code> declarado como <code>reg</code> es un error de compilación: un registro se escribe desde un bloque de procedimiento, no con <code>assign</code>.</div></div>
+  </div>
+  <p style="margin-top:var(--space-4)"></p>
+  <div class="nota nota-cuidado">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
+    <div><b>Cuidado</b><div class="cuerpo">Si un mismo cable recibe dos <code>assign</code> distintos, tienes dos señales sobre el mismo cable: una contingencia. Con <code>wire</code> normal el simulador dará <code>x</code> cuando discrepen. Si eso es intencionado (un bus compartido), declara el cable como <code>tri</code> y usa búferes triestado para que solo uno hable cada vez.</div></div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Compruébalo</h2>
+  <div class="reto" id="reto"></div>
+  <p class="pie">Las respuestas se corrigen en la página; nada se envía a ningún sitio.</p>
+</section>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var est = { exp:'r', on:true, r:[1,0,1,1], m:[0,1,1,0], t:0, eventos:[] };
+  var cls = function(v){ return v === 'z' ? 'z' : (v ? 'uno' : 'cero'); };
+  var EXPR = {
+    r:   { txt:'r',     f:function(r,m){ return r.slice(); }, desc:'conexión directa' },
+    not: { txt:'~r',    f:function(r,m){ return r.map(function(b){ return b?0:1; }); }, desc:'inversor entre medias' },
+    and: { txt:'r & m', f:function(r,m){ return r.map(function(b,i){ return b & m[i]; }); }, desc:'AND bit a bit entre medias' },
+    inc: { txt:'r + 1', f:function(r,m){ var n=(toDec(r)+1)&15; return [8,4,2,1].map(function(p){ return (n&p)?1:0; }); }, desc:'sumador entre medias (4 bits, módulo 16)' }
+  };
+  function toDec(b){ return b.reduce(function(a,x){ return a*2+x; },0); }
+  function wVal(){ return est.on ? EXPR[est.exp].f(est.r, est.m) : ['z','z','z','z']; }
+  function fmt(b){ return b.join(''); }
+
+  function registrar(){
+    var w = wVal();
+    est.eventos.push({ t:est.t, r:fmt(est.r), w:fmt(w), on:est.on });
+    est.t++;
+    if (est.eventos.length > 12) est.eventos.shift();
+  }
+
+  function bitsUI(id, arr, editable, key){
+    var c = $(id); c.innerHTML = '';
+    arr.forEach(function(v,i){
+      var d = document.createElement('div'); d.className = 'bitctl';
+      var b = document.createElement('button'); b.className = 'bit '+cls(v); b.textContent = v; b.disabled = !editable;
+      b.setAttribute('aria-label', (key||'w')+' bit '+(3-i)+', valor '+v+(editable?', pulsa para cambiar':''));
+      if (!editable) b.style.cursor = 'default';
+      if (editable) b.addEventListener('click', function(){ est[key][i] = est[key][i] ? 0 : 1; registrar(); render(); });
+      var s = document.createElement('span'); s.textContent = ['2³','2²','2¹','2⁰'][i];
+      d.appendChild(s); d.appendChild(b); c.appendChild(d);
+    });
+    var eq = document.createElement('span'); eq.className = 'valor-eq';
+    eq.textContent = arr.indexOf('z') >= 0 ? '= z' : '= '+toDec(arr)+'₁₀';
+    c.appendChild(eq);
+  }
+
+  function render(){
+    var w = wVal(), e = EXPR[est.exp];
+    bitsUI('bits-r', est.r, true, 'r');
+    $('bloque-m').hidden = est.exp !== 'and';
+    if (est.exp === 'and') bitsUI('bits-m', est.m, true, 'm');
+    bitsUI('bits-w', w, false);
+    // SVG
+    var h = '';
+    var celdas = function(arr, x, y){ return arr.map(function(v,i){ var cx = x + i*34; return '<rect class="celda '+cls(v)+'" x="'+cx+'" y="'+y+'" width="28" height="30"/><text class="celda-txt '+cls(v)+'" x="'+(cx+14)+'" y="'+(y+22)+'" text-anchor="middle">'+v+'</text>'; }).join(''); };
+    var showM = est.exp === 'and';
+    h += '<rect class="caja reg" x="16" y="'+(showM?22:60)+'" width="170" height="80"/><text class="sub" x="30" y="'+(showM?44:82)+'">reg</text><text class="rotulo" x="62" y="'+(showM?45:83)+'">r</text>'+celdas(est.r, 30, showM?56:94);
+    if (showM) h += '<rect class="caja reg" x="16" y="128" width="170" height="80"/><text class="sub" x="30" y="150">reg</text><text class="rotulo" x="62" y="151">m</text>'+celdas(est.m, 30, 162);
+    var yR = showM ? 62 : 100, yM = 168, yW = showM ? 115 : 100;
+    var lcl = est.on ? '' : ' off';
+    if (est.exp === 'r') {
+      h += '<line class="linea'+lcl+'" x1="186" y1="'+yR+'" x2="300" y2="'+yR+'"/>';
+    } else {
+      // bloque de lógica
+      h += '<line class="linea'+lcl+'" x1="186" y1="'+yR+'" x2="214" y2="'+yR+'"/>';
+      if (showM) h += '<line class="linea'+lcl+'" x1="186" y1="'+yM+'" x2="214" y2="'+yM+'"/>';
+      var bTop = showM ? yR-16 : yW-28, bBot = showM ? yM+16 : yW+28;
+      h += '<rect x="214" y="'+bTop+'" width="60" height="'+(bBot-bTop)+'" rx="8" style="fill:var(--dorado); stroke:var(--tinta); stroke-width:2"/>';
+      h += '<text x="244" y="'+(yW+6)+'" text-anchor="middle" style="font:600 16px var(--font-mono); fill:var(--tinta)">'+{not:'~',and:'&',inc:'+1'}[est.exp]+'</text>';
+      h += '<line class="linea'+lcl+'" x1="274" y1="'+yW+'" x2="300" y2="'+yW+'"/>';
+    }
+    // interruptor assign
+    h += '<g class="interruptor'+(est.on?' on':'')+'" id="sw" tabindex="0" role="switch" aria-checked="'+est.on+'" aria-label="Asignación continua assign"><rect x="300" y="'+(yW-14)+'" width="56" height="28"/><circle cx="'+(est.on?342:314)+'" cy="'+yW+'" r="9"/><text x="328" y="'+(yW-20)+'" text-anchor="middle">ASSIGN</text></g>';
+    h += '<line class="linea'+lcl+'" x1="356" y1="'+yW+'" x2="300" y2="'+yW+'" style="display:none"/>';
+    h += '<line class="linea'+lcl+'" x1="356" y1="'+yW+'" x2="310" y2="'+yW+'" style="display:none"/>';
+    h += '<rect class="caja wire" x="300" y="'+(yW+22)+'" width="170" height="80" style="display:none"/>';
+    // cable
+    h += '<line class="linea'+lcl+'" x1="356" y1="'+yW+'" x2="300" y2="'+yW+'" style="display:none"/>';
+    h += '<rect class="caja wire" x="296" y="'+(yW+28)+'" width="170" height="80"/><text class="sub" x="310" y="'+(yW+50)+'">wire</text><text class="rotulo" x="356" y="'+(yW+51)+'">w</text>'+celdas(w, 310, yW+62);
+    h += '<line class="linea'+lcl+'" x1="328" y1="'+(yW+14)+'" x2="328" y2="'+(yW+28)+'"/>';
+    if (!est.on) h += '<text x="328" y="'+(yW+125)+'" text-anchor="middle" style="font:400 13px var(--font-sans); fill:var(--tinta-suave)">sin assign, el cable queda en z</text>';
+    $('svg').innerHTML = h;
+    $('sw').addEventListener('click', toggle); $('sw').addEventListener('keydown', function(ev){ if (ev.key===' '||ev.key==='Enter'){ ev.preventDefault(); toggle(); } });
+    $('tgl').textContent = est.on ? 'Quitar el assign' : 'Poner el assign';
+    $('lectura').innerHTML = est.on
+      ? 'Con <code>assign w = '+e.txt+';</code> activo, <strong>w vale '+fmt(w)+'</strong> ahora mismo y seguirá valiendo '+e.txt+' pase lo que pase con los registros.'
+      : 'Sin <code>assign</code>, nadie pone nada sobre el cable: <strong>w vale zzzz</strong> aunque r valga '+fmt(est.r)+'.';
+    $('verilog').innerHTML = '<span class="kw">wire</span> [3:0] <span class="id">w</span>;\n<span class="kw">reg</span>  [3:0] <span class="id">r</span>'+(showM?', <span class="id">m</span>':'')+';\n\n<span class="'+(est.on?'':'off ')+'"><span class="kw">assign</span> <span class="id">w</span> = '+e.txt+';</span>\n<span class="cm">// '+e.desc+'</span>\n\n<span class="cm">// r = 4\'b'+fmt(est.r)+(showM?'  m = 4\'b'+fmt(est.m):'')+'\n// w = 4\'b'+fmt(w)+'</span>';
+    crono();
+  }
+  function toggle(){ est.on = !est.on; registrar(); render(); }
+
+  function crono(){
+    var ev = est.eventos, n = ev.length, W = 640, x0 = 70, x1 = 620, paso = (x1-x0)/Math.max(n,1), svg = $('crono');
+    var h = '';
+    [['r',40,'r'],['w',105,'w']].forEach(function(f){
+      var key = f[0], yb = f[1];
+      h += '<text class="nombre-onda" x="12" y="'+(yb-10)+'" style="fill:var(--'+(key==='r'?'vitor':'centenario')+')">'+key+'[3:0]</text>';
+      h += '<line class="rejilla" x1="'+x0+'" y1="'+(yb+6)+'" x2="'+x1+'" y2="'+(yb+6)+'"/>';
+      for (var i=0;i<n;i++){
+        var v = ev[i][key];
+        var xa = x0 + i*paso, xb = xa + paso, cambia = i>0 && ev[i-1][key] !== v;
+        var z = v === 'zzzz';
+        if (z) { h += '<line class="onda z" x1="'+xa+'" y1="'+(yb-12)+'" x2="'+xb+'" y2="'+(yb-12)+'"/>'; }
+        else {
+          // bus-style hexagon
+          var d = 'M'+(xa+(cambia?4:0))+' '+(yb-26)+' L'+(xb-4)+' '+(yb-26)+' L'+xb+' '+(yb-12)+' L'+(xb-4)+' '+(yb+2)+' L'+(xa+(cambia?4:0))+' '+(yb+2)+(cambia?' L'+xa+' '+(yb-12)+' Z':' L'+xa+' '+(yb+2)+' L'+xa+' '+(yb-26));
+          h += '<path class="onda '+key+'" d="'+d+'"/>';
+        }
+        h += '<text class="val-onda" x="'+(xa+paso/2)+'" y="'+(yb-8)+'" text-anchor="middle">'+v+'</text>';
+      }
+    });
+    for (var i=0;i<=n;i++){ var x = x0 + i*paso; h += '<line class="rejilla" x1="'+x+'" y1="8" x2="'+x+'" y2="118"/>'; if (i<n) h += '<text class="tick" x="'+(x+paso/2)+'" y="140" text-anchor="middle">t'+ev[i].t+'</text>'; }
+    if (!n) h += '<text class="val-onda" x="'+(W/2)+'" y="75" text-anchor="middle">Cambia algún bit de r para empezar</text>';
+    svg.innerHTML = h;
+  }
+
+  $('tgl').addEventListener('click', toggle);
+  $('aleatorio').addEventListener('click', function(){ est.r = [0,0,0,0].map(function(){ return Math.random()<.5?0:1; }); registrar(); render(); });
+  $('limpiar').addEventListener('click', function(){ est.eventos = []; est.t = 0; registrar(); render(); });
+  document.querySelectorAll('.pestana').forEach(function(b){
+    b.addEventListener('click', function(){
+      est.exp = b.dataset.exp;
+      document.querySelectorAll('.pestana').forEach(function(x){ x.setAttribute('aria-selected', x===b?'true':'false'); });
+      registrar(); render();
+    });
+  });
+  registrar(); render();
+
+  /* Reto */
+  var PREG = [
+    { q:'Tras <code>assign w = r;</code>, el registro r cambia de 0101 a 1100. ¿Qué pasa con w?', ops:['Sigue en 0101 hasta que se ejecute otra vez el assign','Pasa a 1100 en el mismo instante','Pasa a z'], ok:1, exp:'La asignación es continua: w sigue a r en todo momento, sin ejecutar nada más.' },
+    { q:'Se declara <code>wire w;</code> y nadie le hace <code>assign</code> ni lo conecta a ninguna puerta. ¿Qué vale w?', ops:['0','x','z'], ok:2, exp:'Un cable sin nada conectado está en alta impedancia: z.' },
+    { q:'¿Cuál de estas líneas es un error si <code>r</code> es <code>reg</code> y <code>w</code> es <code>wire</code>?', ops:['<code>assign w = r;</code>','<code>assign r = w;</code>','<code>assign w = ~r;</code>'], ok:1, exp:'A la izquierda de assign solo puede ir una red. Un reg se escribe dentro de initial o always.' },
+    { q:'¿Dónde se escribe un <code>assign</code>?', ops:['Dentro de un bloque initial','Dentro de un bloque always','Al nivel del módulo, fuera de los bloques'], ok:2, exp:'assign describe una conexión permanente, no un paso de un procedimiento: va fuera de initial y always.' }
+  ];
+  var R = $('reto');
+  PREG.forEach(function(p, i){
+    var div = document.createElement('div'); div.className = 'pregunta';
+    div.innerHTML = '<div><span class="etiqueta etiqueta-neutra">Pregunta '+(i+1)+'</span></div><div>'+p.q+'</div><div class="opciones" role="group" aria-label="Opciones de la pregunta '+(i+1)+'">'+p.ops.map(function(o,j){ return '<button class="boton" data-j="'+j+'" aria-pressed="false">'+o.replace(/<code>/g,'<code style="background:transparent;padding:0;color:inherit">')+'</button>'; }).join('')+'</div><div class="feedback" aria-live="polite"></div>';
+    R.appendChild(div);
+    div.querySelectorAll('.opciones .boton').forEach(function(b){
+      b.addEventListener('click', function(){
+        div.querySelectorAll('.opciones .boton').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+        b.setAttribute('aria-pressed','true');
+        var ok = +b.dataset.j === p.ok;
+        div.querySelector('.feedback').innerHTML = '<div class="nota '+(ok?'nota-correcto':'nota-incorrecto')+'" role="status">'
+          + (ok ? '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l4 4 10-9"/></svg>' : '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15"/></svg>')
+          + '<div><b>'+(ok?'Correcto':'Incorrecto')+'</b><div class="cuerpo">'+p.exp+'</div></div></div>';
+      });
+    });
+  });
+})();
+</script>
+<footer>Computadores I · Grado en Ingeniería Informática · Daniel Hernández de la Iglesia (PB3)<br>Material de prácticas basado en <a href="http://avellano.usal.es/~compi/">la web de la asignatura</a>.</footer>
+</body>
+</html>

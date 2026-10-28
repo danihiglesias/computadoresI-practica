@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Búferes triestado</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Lato:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: una columna de lectura (65 ch) con el explorador a ancho completo; tema único claro del sistema Computadores */
+:root {
+  --papel:#f8f4ec; --papel-elevado:#ffffff; --papel-hundido:#efe8db; --piedra:#e3d9c8; --piedra-fuerte:#857869;
+  --tinta:#2a2420; --tinta-suave:#6b5f55;
+  --vitor:#a8192b; --vitor-suave:#f7dddc; --sobre-vitor:#ffffff;
+  --dorado:#d9a441; --dorado-texto:#8a5a0a; --dorado-suave:#fbeed2;
+  --centenario:#385e9d; --centenario-suave:#dde6f4; --sobre-centenario:#ffffff;
+  --correcto:#1f6f43; --correcto-suave:#dcefe2;
+  --incorrecto:var(--vitor); --incorrecto-suave:var(--vitor-suave);
+  --foco:var(--centenario); --diag-bus:var(--tinta-suave);
+  --bit-uno:var(--vitor); --bit-cero:var(--papel-hundido);
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
+  --radius-sm:6px; --radius-md:12px; --radius-lg:20px; --radius-pill:999px;
+  --sombra-tarjeta:0 1px 2px rgba(42,36,32,.06), 0 4px 12px rgba(42,36,32,.06);
+  --font-display:"Bricolage Grotesque","Lato",system-ui,sans-serif;
+  --font-sans:"Lato",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme: light;
+}
+* { box-sizing:border-box; }
+body { background:var(--papel); color:var(--tinta); font-family:var(--font-sans); font-size:17px; line-height:27px; margin:0;
+  padding-block:var(--space-6) var(--space-8); padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+.wrap { max-width:960px; margin:0 auto; display:flex; flex-direction:column; gap:var(--space-7); }
+.prosa { max-width:68ch; }
+.prosa p { margin:0 0 var(--space-4); }
+h1,h2,h3 { font-family:var(--font-display); text-wrap:balance; margin:0; }
+h1 { font-size:40px; line-height:44px; font-weight:700; letter-spacing:-.02em; margin:var(--space-2) 0 var(--space-4); }
+h2 { font-size:28px; line-height:34px; font-weight:600; letter-spacing:-.01em; margin-bottom:var(--space-4); display:inline-block; box-shadow:inset 0 -4px 0 var(--dorado); }
+h3 { font-size:20px; line-height:26px; font-weight:600; }
+.etiqueta { display:inline-flex; align-items:center; gap:var(--space-1); font-size:12px; line-height:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px var(--space-2); border-radius:var(--radius-pill); background:var(--vitor-suave); color:var(--vitor); }
+.etiqueta-neutra { background:var(--papel-hundido); color:var(--tinta-suave); }
+.cabecera { display:flex; align-items:center; gap:var(--space-3); }
+.cabecera img { width:40px; height:40px; }
+code, .mono { font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+code { font-size:15px; background:var(--papel-hundido); padding:1px 6px; border-radius:var(--radius-sm); }
+pre { font-family:var(--font-mono); font-size:15px; line-height:24px; background:var(--papel-hundido); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); margin:0; overflow-x:auto; }
+pre .kw { color:var(--vitor); font-weight:600; } pre .id { color:var(--centenario); } pre .cm { color:var(--tinta-suave); }
+a { color:var(--centenario); }
+
+/* Nota */
+.nota { display:grid; grid-template-columns:20px 1fr; gap:var(--space-3); padding:var(--space-4); border-radius:var(--radius-md); background:var(--papel-elevado); border:1px solid var(--piedra); font-size:15px; line-height:22px; max-width:68ch; }
+.nota svg { width:20px; height:20px; margin-top:1px; }
+.nota b { display:block; margin-bottom:2px; }
+.nota-idea { background:var(--centenario-suave); border-color:var(--centenario-suave); color:var(--centenario); }
+.nota-cuidado { background:var(--dorado-suave); border-color:var(--dorado-suave); color:var(--dorado-texto); }
+.nota-correcto { background:var(--correcto-suave); border-color:var(--correcto-suave); color:var(--correcto); }
+.nota-incorrecto { background:var(--incorrecto-suave); border-color:var(--incorrecto-suave); color:var(--incorrecto); }
+.nota .cuerpo { color:var(--tinta); }
+
+/* Explorador */
+.panel { background:var(--papel-elevado); border-radius:var(--radius-lg); box-shadow:var(--sombra-tarjeta); padding:var(--space-5); display:flex; flex-direction:column; gap:var(--space-5); }
+.pestanas { display:flex; flex-wrap:wrap; gap:var(--space-2); }
+.pestana { font:700 15px/20px var(--font-sans); padding:var(--space-2) var(--space-4); border-radius:var(--radius-pill); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.pestana[aria-selected="true"] { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.pestana code { background:transparent; padding:0; font-weight:600; color:inherit; }
+.explorador { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:var(--space-5); align-items:start; }
+@media (max-width:720px) { .explorador { grid-template-columns:1fr; } }
+.escena { min-width:0; }
+.escena svg { width:100%; height:auto; display:block; max-width:100%; }
+.linea { stroke:var(--diag-bus); stroke-width:3; fill:none; stroke-linecap:round; transition:stroke 250ms ease-out; }
+.linea.uno { stroke:var(--vitor); } .linea.cero { stroke:var(--tinta); } .linea.z { stroke:var(--piedra); stroke-dasharray:6 8; }
+.cuerpo-puerta { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:3; stroke-linejoin:round; }
+.burbuja { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:3; }
+.pin { font-family:var(--font-display); font-size:22px; font-weight:600; fill:var(--tinta); }
+.valor { font-family:var(--font-mono); font-size:22px; font-weight:600; }
+.chip { rx:6; }
+.chip.uno { fill:var(--vitor); } .chip.cero { fill:var(--papel-hundido); stroke:var(--piedra); stroke-width:1.5; } .chip.z { fill:var(--papel-elevado); stroke:var(--piedra-fuerte); stroke-width:1.5; stroke-dasharray:4 4; }
+.chip-txt.uno { fill:var(--sobre-vitor); } .chip-txt.cero { fill:var(--tinta); } .chip-txt.z { fill:var(--tinta-suave); }
+.barra { stroke:var(--tinta); stroke-width:2.5; }
+.controles { display:flex; flex-wrap:wrap; gap:var(--space-3); align-items:center; }
+.bitctl { display:inline-flex; flex-direction:column; align-items:center; gap:2px; }
+.bitctl span { font:400 12px/16px var(--font-mono); color:var(--tinta-suave); }
+.bit { width:56px; height:48px; border-radius:var(--radius-sm); border:1px solid var(--piedra); background:var(--bit-cero); color:var(--tinta); font:600 22px/28px var(--font-mono); cursor:pointer; transition:background 200ms ease-out, color 200ms ease-out; }
+.bit.uno { background:var(--bit-uno); border-color:var(--bit-uno); color:var(--sobre-vitor); }
+.bit:focus-visible, .pestana:focus-visible, .boton:focus-visible, .sel:focus-visible { outline:2px solid var(--foco); outline-offset:2px; }
+.salida { margin-left:auto; display:flex; align-items:center; gap:var(--space-3); font-size:15px; }
+.salida .y { font:600 22px/28px var(--font-mono); min-width:56px; height:48px; display:inline-grid; place-items:center; border-radius:var(--radius-sm); padding:0 var(--space-3); }
+.y.uno { background:var(--vitor); color:var(--sobre-vitor); } .y.cero { background:var(--papel-hundido); color:var(--tinta); border:1px solid var(--piedra); } .y.z { background:var(--papel-elevado); color:var(--tinta-suave); border:1.5px dashed var(--piedra-fuerte); }
+.lectura { font-size:15px; line-height:22px; color:var(--tinta-suave); min-height:44px; margin:0; }
+.lectura strong { color:var(--tinta); }
+table.tv { border-collapse:collapse; font-family:var(--font-mono); font-size:17px; font-variant-numeric:tabular-nums; width:100%; max-width:280px; }
+.tv th { font-family:var(--font-display); font-weight:600; font-size:18px; padding:var(--space-2) var(--space-3); border-bottom:2px solid var(--tinta); text-align:center; }
+.tv th.neg { text-decoration:overline; }
+.tv th:last-child, .tv td:last-child { border-left:2px solid var(--tinta); }
+.tv td { padding:var(--space-2) var(--space-3); text-align:center; border-bottom:1px solid var(--piedra); transition:background 200ms ease-out; }
+.tv tr.activa td { background:var(--dorado); color:var(--tinta); font-weight:600; }
+.tv td.z { color:var(--tinta-suave); }
+.derecha { display:flex; flex-direction:column; gap:var(--space-4); min-width:0; }
+.leyenda { display:flex; flex-wrap:wrap; gap:var(--space-3); font-size:13px; line-height:18px; color:var(--tinta-suave); }
+.leyenda i { display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-2px; margin-right:4px; }
+
+/* Bus */
+.bus-panel { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:var(--space-5); align-items:start; }
+@media (max-width:720px) { .bus-panel { grid-template-columns:1fr; } }
+.fuente { display:grid; grid-template-columns:auto 1fr auto; gap:var(--space-3); align-items:center; padding:var(--space-3); border:1px solid var(--piedra); border-radius:var(--radius-md); font-size:15px; }
+.fuente .nombre { font-family:var(--font-display); font-weight:600; font-size:18px; }
+.fuente .ctl { display:flex; gap:var(--space-2); align-items:center; }
+.fuente .ctl span { font:400 12px/16px var(--font-mono); color:var(--tinta-suave); }
+.bit.chico { width:44px; height:40px; font-size:18px; }
+.boton { font:700 15px/20px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.boton-primario { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.boton-discreto { background:transparent; border-color:transparent; color:var(--vitor); }
+.fila { display:flex; flex-wrap:wrap; gap:var(--space-3); align-items:center; }
+.conflicto { stroke:var(--vitor); stroke-width:3; stroke-dasharray:4 6; }
+
+/* Reto */
+.reto { display:grid; gap:var(--space-4); }
+.pregunta { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--piedra); border-radius:var(--radius-md); background:var(--papel-elevado); }
+.opciones { display:flex; flex-wrap:wrap; gap:var(--space-2); }
+.opciones .boton[aria-pressed="true"] { background:var(--centenario); border-color:var(--centenario); color:var(--sobre-centenario); }
+.pie { font-size:13px; line-height:18px; color:var(--tinta-suave); }
+.resumen { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:var(--space-3); }
+.tarjeta { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); background:var(--papel-elevado); font-size:15px; line-height:22px; }
+.tarjeta code { display:inline-block; margin-bottom:var(--space-2); font-weight:600; color:var(--vitor); }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+.nav-leccion{max-width:960px;margin:0 auto var(--space-5);display:flex;justify-content:space-between;gap:var(--space-3);font-size:14px;flex-wrap:wrap}.nav-leccion a{color:var(--centenario)}.nav-leccion span{color:var(--tinta-suave)}
+footer{max-width:960px;margin:48px auto 0;font-size:13px;line-height:18px;color:var(--tinta-suave)}footer a{color:var(--vitor)}
+</style>
+</head>
+<body>
+<nav class="nav-leccion" aria-label="Navegación de la lección"><a href="index.html">← Índice de la sesión 5</a><span>1 / 7</span><span><a href="contingencia-senales.html">Contingencia de señales →</a></span></nav>
+<div class="wrap">
+<header class="prosa">
+  <div class="cabecera">
+    <img alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%236b5f55'%3E%3Crect x='18' y='2' width='4' height='8' rx='1'/%3E%3Crect x='30' y='2' width='4' height='8' rx='1'/%3E%3Crect x='42' y='2' width='4' height='8' rx='1'/%3E%3Crect x='18' y='54' width='4' height='8' rx='1'/%3E%3Crect x='30' y='54' width='4' height='8' rx='1'/%3E%3Crect x='42' y='54' width='4' height='8' rx='1'/%3E%3Crect x='2' y='18' width='8' height='4' rx='1'/%3E%3Crect x='2' y='30' width='8' height='4' rx='1'/%3E%3Crect x='2' y='42' width='8' height='4' rx='1'/%3E%3Crect x='54' y='18' width='8' height='4' rx='1'/%3E%3Crect x='54' y='30' width='8' height='4' rx='1'/%3E%3Crect x='54' y='42' width='8' height='4' rx='1'/%3E%3C/g%3E%3Crect x='8' y='8' width='48' height='48' rx='12' fill='%23a8192b'/%3E%3Crect x='16' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='25' y='24' width='7' height='16' rx='2' fill='%23f7dddc' fill-opacity='.35'/%3E%3Crect x='34' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='43' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3C/svg%3E">
+    <span class="etiqueta">Computadores · Lógica digital</span>
+  </div>
+  <h1>Búferes triestado</h1>
+  <p>Una puerta normal siempre dice algo: su salida vale 0 o vale 1. Un búfer triestado añade una línea de control que le permite <strong>callarse</strong>: cuando no está habilitado, su salida queda en <strong>alta impedancia</strong> (<em>high impedance</em>), que escribimos <code>z</code>. Eléctricamente es como si el cable estuviera desconectado.</p>
+  <p>Esa tercera posibilidad es lo que permite que varios dispositivos compartan un mismo bus sin estorbarse: hablan por turnos y, mientras no les toca, se desconectan.</p>
+</header>
+
+<section>
+  <h2>Explorador</h2>
+  <div class="panel" id="explorador">
+    <div class="pestanas" role="tablist" aria-label="Tipo de puerta">
+      <button class="pestana" role="tab" data-puerta="bufif1" aria-selected="true"><code>bufif1</code></button>
+      <button class="pestana" role="tab" data-puerta="bufif0" aria-selected="false"><code>bufif0</code></button>
+      <button class="pestana" role="tab" data-puerta="notif1" aria-selected="false"><code>notif1</code></button>
+      <button class="pestana" role="tab" data-puerta="notif0" aria-selected="false"><code>notif0</code></button>
+    </div>
+    <div class="explorador">
+      <div class="escena">
+        <svg viewBox="0 0 420 220" aria-labelledby="esc-titulo" role="img">
+          <title id="esc-titulo">Esquema de la puerta con los valores actuales de A, G e Y</title>
+          <!-- control -->
+          <line id="l-g" class="linea" x1="200" y1="40" x2="200" y2="86"/>
+          <circle id="bur-g" class="burbuja" cx="200" cy="92" r="6" style="display:none"/>
+          <text class="pin" x="186" y="32" text-anchor="end" id="pin-g">G</text>
+          <line id="barra-g" class="barra" x1="170" y1="12" x2="186" y2="12" style="display:none"/>
+          <rect id="chip-g" class="chip" x="206" y="14" width="30" height="30"/>
+          <text id="txt-g" class="valor chip-txt" x="221" y="36" text-anchor="middle">1</text>
+          <!-- entrada -->
+          <text class="pin" x="20" y="134">A</text>
+          <rect id="chip-a" class="chip" x="44" y="112" width="30" height="30"/>
+          <text id="txt-a" class="valor chip-txt" x="59" y="134" text-anchor="middle">0</text>
+          <line id="l-a" class="linea" x1="80" y1="127" x2="170" y2="127"/>
+          <!-- cuerpo -->
+          <polygon class="cuerpo-puerta" points="170,92 170,162 232,127"/>
+          <circle id="bur-y" class="burbuja" cx="239" cy="127" r="6" style="display:none"/>
+          <!-- salida -->
+          <line id="l-y" class="linea" x1="246" y1="127" x2="330" y2="127"/>
+          <rect id="chip-y" class="chip" x="336" y="112" width="30" height="30"/>
+          <text id="txt-y" class="valor chip-txt" x="351" y="134" text-anchor="middle">0</text>
+          <text class="pin" x="380" y="134">Y</text>
+          <text id="pie-z" x="210" y="205" text-anchor="middle" style="font:400 13px var(--font-sans); fill:var(--tinta-suave)"></text>
+        </svg>
+        <div class="controles">
+          <div class="bitctl"><span>A (entrada)</span><button class="bit" id="btn-a" aria-pressed="false" aria-label="Entrada A, valor 0, pulsa para cambiar">0</button></div>
+          <div class="bitctl"><span>G (control)</span><button class="bit uno" id="btn-g" aria-pressed="true" aria-label="Control G, valor 1, pulsa para cambiar">1</button></div>
+          <div class="salida"><span>Salida Y</span><span class="y cero" id="out-y">0</span></div>
+        </div>
+        <p class="lectura" id="lectura"></p>
+      </div>
+      <div class="derecha">
+        <table class="tv" id="tv">
+          <thead><tr><th id="th-g">G</th><th>A</th><th>Y</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <pre id="verilog"></pre>
+        <div class="leyenda">
+          <span><i style="background:var(--vitor)"></i>1</span>
+          <span><i style="background:var(--papel-hundido);border:1px solid var(--piedra)"></i>0</span>
+          <span><i style="border:1.5px dashed var(--piedra-fuerte)"></i>z (alta impedancia)</span>
+          <span><i style="background:var(--dorado)"></i>fila activa de la tabla</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Cómo leer el nombre</h2>
+  <p>Los cuatro nombres de Verilog siguen el mismo patrón: <code>buf</code> o <code>not</code> dice qué hace la puerta cuando está habilitada; <code>if1</code> o <code>if0</code> dice con qué valor de la línea de control se habilita. Un <code>bufif0</code> es, por tanto, un búfer que deja pasar la entrada <em>si el control vale 0</em>. En el esquema, la habilitación por nivel bajo se dibuja con una burbuja en la entrada de control y con la línea negada (<span style="text-decoration:overline">G</span>) en la tabla.</p>
+  <div class="resumen">
+    <div class="tarjeta"><code>bufif1 (Y, A, G)</code><br>Y = A si G = 1; z si G = 0.</div>
+    <div class="tarjeta"><code>bufif0 (Y, A, G)</code><br>Y = A si G = 0; z si G = 1.</div>
+    <div class="tarjeta"><code>notif1 (Y, A, G)</code><br>Y = Ā si G = 1; z si G = 0.</div>
+    <div class="tarjeta"><code>notif0 (Y, A, G)</code><br>Y = Ā si G = 0; z si G = 1.</div>
+  </div>
+  <p style="margin-top:var(--space-4)"></p>
+  <div class="nota nota-cuidado">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
+    <div><b>Cuidado</b><div class="cuerpo">El orden de los argumentos es siempre <code>(salida, entrada, control)</code>. La salida va primero, como en todas las primitivas de Verilog. Escribir <code>bufif1 b(A, Y, G)</code> compila, pero conecta el búfer al revés.</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Para qué sirve: un bus compartido</h2>
+  <div class="prosa"><p>Tres dispositivos quieren escribir en la misma línea de datos. Cada uno pasa por un <code>bufif1</code> con su propia señal de habilitación. Activa uno y mira qué llega al bus; activa dos a la vez y verás el problema que el triestado existe para evitar.</p></div>
+  <div class="panel">
+    <div class="bus-panel">
+      <div class="escena">
+        <svg viewBox="0 0 460 250" role="img" aria-labelledby="bus-titulo">
+          <title id="bus-titulo">Tres búferes bufif1 conectados a una misma línea de bus</title>
+          <g id="bus-g"></g>
+        </svg>
+        <p class="lectura" id="bus-lectura"></p>
+      </div>
+      <div class="derecha" id="fuentes"></div>
+    </div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Compruébalo</h2>
+  <div class="reto" id="reto"></div>
+  <p class="pie">Las respuestas se corrigen en la página; nada se envía a ningún sitio.</p>
+</section>
+</div>
+
+<script>
+(function(){
+  var PUERTAS = {
+    bufif1:{ inv:false, act:1, nombre:'bIzquierda', desc:'búfer habilitado por nivel alto' },
+    bufif0:{ inv:false, act:0, nombre:'bDerecha',   desc:'búfer habilitado por nivel bajo' },
+    notif1:{ inv:true,  act:1, nombre:'nAlto',      desc:'inversor habilitado por nivel alto' },
+    notif0:{ inv:true,  act:0, nombre:'nBajo',      desc:'inversor habilitado por nivel bajo' }
+  };
+  var est = { puerta:'bufif1', a:0, g:1 };
+  var $ = function(id){ return document.getElementById(id); };
+
+  function salida(p, a, g){ var d = PUERTAS[p]; if (g !== d.act) return 'z'; return d.inv ? (a ? 0 : 1) : a; }
+  function cls(v){ return v === 'z' ? 'z' : (v === 1 ? 'uno' : 'cero'); }
+  function setChip(id, v){ $('chip-'+id).setAttribute('class','chip '+cls(v)); var t=$('txt-'+id); t.setAttribute('class','valor chip-txt '+cls(v)); t.textContent = v; }
+
+  function tabla(){
+    var d = PUERTAS[est.puerta], filas = [];
+    var inact = d.act ? 0 : 1;
+    // fila de deshabilitado + dos filas habilitadas; en la tabla se muestra G o /G según el tipo
+    var filasRaw = d.act === 1
+      ? [[0,'x','z'],[1,0,salida(est.puerta,0,1)],[1,1,salida(est.puerta,1,1)]]
+      : [[0,0,salida(est.puerta,0,0)],[0,1,salida(est.puerta,1,0)],[1,'x','z']];
+    $('th-g').className = d.act === 0 ? 'neg' : '';
+    var tb = $('tv').querySelector('tbody'); tb.innerHTML = '';
+    filasRaw.forEach(function(f){
+      var tr = document.createElement('tr');
+      var activa = (f[0] === est.g) && (f[1] === 'x' || f[1] === est.a);
+      if (activa) tr.className = 'activa';
+      f.forEach(function(c){ var td = document.createElement('td'); td.textContent = c; if (c === 'z') td.className = 'z'; tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+    void inact;
+  }
+
+  function render(){
+    var d = PUERTAS[est.puerta], y = salida(est.puerta, est.a, est.g);
+    setChip('a', est.a); setChip('g', est.g); setChip('y', y);
+    $('l-a').setAttribute('class','linea '+cls(est.a));
+    $('l-g').setAttribute('class','linea '+cls(est.g));
+    $('l-y').setAttribute('class','linea '+cls(y));
+    $('bur-y').style.display = d.inv ? '' : 'none';
+    $('bur-g').style.display = d.act === 0 ? '' : 'none';
+    $('barra-g').style.display = d.act === 0 ? '' : 'none';
+    $('l-g').setAttribute('y2', d.act === 0 ? 86 : 92);
+    var ba = $('btn-a'), bg = $('btn-g');
+    ba.textContent = est.a; ba.className = 'bit '+cls(est.a); ba.setAttribute('aria-pressed', !!est.a); ba.setAttribute('aria-label','Entrada A, valor '+est.a+', pulsa para cambiar');
+    bg.textContent = est.g; bg.className = 'bit '+cls(est.g); bg.setAttribute('aria-pressed', !!est.g); bg.setAttribute('aria-label','Control G, valor '+est.g+', pulsa para cambiar');
+    var oy = $('out-y'); oy.textContent = y; oy.className = 'y '+cls(y);
+    var habil = est.g === d.act;
+    $('pie-z').textContent = habil ? '' : 'Salida desconectada: Y en alta impedancia';
+    $('lectura').innerHTML = habil
+      ? 'G = '+est.g+' habilita la puerta. '+(d.inv ? 'Como es un inversor, <strong>Y = Ā = '+y+'</strong>.' : 'La entrada pasa tal cual: <strong>Y = A = '+y+'</strong>.')
+      : 'G = '+est.g+' deshabilita la puerta. Da igual lo que valga A: <strong>Y = z</strong>, el cable queda flotando.';
+    $('verilog').innerHTML = '<span class="cm">// Y: salida · A: entrada · G: control</span>\n<span class="cm">// '+d.desc+'</span>\n<span class="kw">'+est.puerta+'</span> <span class="id">'+d.nombre+'</span>(Y, A, G);';
+    tabla();
+  }
+
+  $('btn-a').addEventListener('click', function(){ est.a = est.a ? 0 : 1; render(); });
+  $('btn-g').addEventListener('click', function(){ est.g = est.g ? 0 : 1; render(); });
+  Array.prototype.forEach.call(document.querySelectorAll('.pestana'), function(b){
+    b.addEventListener('click', function(){
+      est.puerta = b.dataset.puerta;
+      document.querySelectorAll('.pestana').forEach(function(x){ x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+      render();
+    });
+  });
+  render();
+
+  /* ---------- Bus compartido ---------- */
+  var fuentes = [ {n:'CPU', a:1, g:1}, {n:'Memoria', a:0, g:0}, {n:'Teclado', a:1, g:0} ];
+  function busRender(){
+    var g = $('bus-g'); var activos = fuentes.filter(function(f){ return f.g === 1; });
+    var conflicto = activos.length > 1 && activos.some(function(f){ return f.a !== activos[0].a; });
+    var valorBus = activos.length === 0 ? 'z' : (conflicto ? 'x' : activos[0].a);
+    var html = '';
+    var yBus = 125, xBus = 380;
+    fuentes.forEach(function(f, i){
+      var y = 45 + i*80, hab = f.g === 1, out = hab ? f.a : 'z';
+      html += '<text class="pin" x="16" y="'+(y+7)+'" style="font-size:16px">'+f.n+'</text>';
+      html += '<rect class="chip '+cls(f.a)+'" x="110" y="'+(y-14)+'" width="26" height="26"/><text class="valor chip-txt '+cls(f.a)+'" x="123" y="'+(y+6)+'" text-anchor="middle" style="font-size:18px">'+f.a+'</text>';
+      html += '<line class="linea '+cls(f.a)+'" x1="140" y1="'+y+'" x2="190" y2="'+y+'"/>';
+      html += '<polygon class="cuerpo-puerta" points="190,'+(y-26)+' 190,'+(y+26)+' 236,'+y+'"/>';
+      html += '<line class="linea '+cls(f.g)+'" x1="213" y1="'+(y-44)+'" x2="213" y2="'+(y-13)+'"/>';
+      html += '<text x="222" y="'+(y-34)+'" style="font:600 13px var(--font-mono); fill:var(--tinta-suave)">EN'+(i+1)+'='+f.g+'</text>';
+      html += '<line class="linea '+cls(out)+'" x1="236" y1="'+y+'" x2="'+xBus+'" y2="'+y+'"/>';
+    });
+    html += '<line class="linea '+(valorBus==='x' ? 'conflicto' : cls(valorBus))+'" x1="'+xBus+'" y1="30" x2="'+xBus+'" y2="220"/>';
+    html += '<text class="pin" x="'+(xBus+14)+'" y="'+(yBus-10)+'" style="font-size:16px">BUS</text>';
+    html += '<rect class="chip '+(valorBus==='x' ? 'uno' : cls(valorBus))+'" x="'+(xBus+10)+'" y="'+yBus+'" width="30" height="30"'+(valorBus==='x'?' style="fill:var(--dorado)"':'')+'/><text class="valor chip-txt '+(valorBus==='x' ? 'cero' : cls(valorBus))+'" x="'+(xBus+25)+'" y="'+(yBus+22)+'" text-anchor="middle">'+valorBus+'</text>';
+    g.innerHTML = html;
+    var L = $('bus-lectura');
+    if (activos.length === 0) L.innerHTML = 'Nadie está habilitado: los tres búferes están en z y el bus queda <strong>flotando</strong>. No hay conflicto, pero tampoco hay dato.';
+    else if (activos.length === 1) L.innerHTML = '<strong>'+activos[0].n+'</strong> es el único habilitado y el bus toma su valor, <strong>'+activos[0].a+'</strong>. Los demás, en z, no estorban.';
+    else if (!conflicto) L.innerHTML = activos.length+' dispositivos habilitados a la vez. Hoy coinciden en el valor y no pasa nada, pero es pura suerte: <strong>el control del bus debe garantizar un único emisor</strong>.';
+    else L.innerHTML = '<strong>Conflicto (<em>bus contention</em>)</strong>: un búfer fuerza 1 y otro fuerza 0 sobre el mismo cable. El valor es indeterminado (<code>x</code>) y en un circuito real puede dañar las salidas.';
+    var F = $('fuentes'); F.innerHTML = '';
+    fuentes.forEach(function(f, i){
+      var div = document.createElement('div'); div.className = 'fuente';
+      div.innerHTML = '<span class="nombre">'+f.n+'</span><span class="ctl"><span>dato</span><button class="bit chico '+cls(f.a)+'" data-i="'+i+'" data-k="a" aria-label="Dato de '+f.n+', valor '+f.a+'">'+f.a+'</button></span><span class="ctl"><span>EN'+(i+1)+'</span><button class="bit chico '+cls(f.g)+'" data-i="'+i+'" data-k="g" aria-label="Habilitación de '+f.n+', valor '+f.g+'">'+f.g+'</button></span>';
+      F.appendChild(div);
+    });
+    var fila = document.createElement('div'); fila.className = 'fila';
+    fila.innerHTML = '<button class="boton boton-discreto" id="bus-solo">Habilitar solo Memoria</button><button class="boton boton-discreto" id="bus-conf">Provocar un conflicto</button>';
+    F.appendChild(fila);
+    F.querySelectorAll('.bit').forEach(function(b){ b.addEventListener('click', function(){ var f = fuentes[+b.dataset.i]; f[b.dataset.k] = f[b.dataset.k] ? 0 : 1; busRender(); }); });
+    $('bus-solo').addEventListener('click', function(){ fuentes.forEach(function(f,i){ f.g = i === 1 ? 1 : 0; }); busRender(); });
+    $('bus-conf').addEventListener('click', function(){ fuentes[0].a = 1; fuentes[0].g = 1; fuentes[1].a = 0; fuentes[1].g = 1; fuentes[2].g = 0; busRender(); });
+  }
+  busRender();
+
+  /* ---------- Reto ---------- */
+  var PREG = [
+    { q:'Un <code>bufif0</code> tiene A = 1 y G = 1. ¿Qué vale Y?', ops:['0','1','z'], ok:2, exp:'bufif0 se habilita con G = 0. Con G = 1 está deshabilitado: Y = z, independientemente de A.' },
+    { q:'Un <code>notif1</code> tiene A = 1 y G = 1. ¿Qué vale Y?', ops:['0','1','z'], ok:0, exp:'G = 1 habilita el notif1, que invierte: Y = Ā = 0.' },
+    { q:'¿Qué instrucción instancia un inversor triestado habilitado por nivel bajo, con salida S, entrada D y control C?', ops:['<code>notif0 n(S, D, C);</code>','<code>notif0 n(D, S, C);</code>','<code>bufif0 n(S, D, C);</code>'], ok:0, exp:'Inversor → not; nivel bajo → if0; y el orden es (salida, entrada, control).' },
+    { q:'Dos <code>bufif1</code> comparten una línea. ¿Cuándo hay conflicto?', ops:['Siempre que ambos estén habilitados','Cuando ambos están habilitados y fuerzan valores distintos','Cuando ninguno está habilitado'], ok:1, exp:'El conflicto aparece cuando dos salidas activas fuerzan 0 y 1 a la vez. Con ninguno habilitado el bus solo queda flotando.' }
+  ];
+  var R = $('reto');
+  PREG.forEach(function(p, i){
+    var div = document.createElement('div'); div.className = 'pregunta';
+    div.innerHTML = '<div><span class="etiqueta etiqueta-neutra">Pregunta '+(i+1)+'</span></div><div>'+p.q+'</div><div class="opciones" role="group" aria-label="Opciones de la pregunta '+(i+1)+'">'+p.ops.map(function(o,j){ return '<button class="boton" data-j="'+j+'" aria-pressed="false">'+o+'</button>'; }).join('')+'</div><div class="feedback" aria-live="polite"></div>';
+    R.appendChild(div);
+    div.querySelectorAll('.opciones .boton').forEach(function(b){
+      b.addEventListener('click', function(){
+        div.querySelectorAll('.opciones .boton').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+        b.setAttribute('aria-pressed','true');
+        var ok = +b.dataset.j === p.ok;
+        div.querySelector('.feedback').innerHTML = '<div class="nota '+(ok?'nota-correcto':'nota-incorrecto')+'" role="status">'
+          + (ok ? '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l4 4 10-9"/></svg>' : '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15"/></svg>')
+          + '<div><b>'+(ok?'Correcto':'Incorrecto')+'</b><div class="cuerpo">'+p.exp+'</div></div></div>';
+      });
+    });
+  });
+})();
+</script>
+<footer>Computadores I · Grado en Ingeniería Informática · Daniel Hernández de la Iglesia (PB3)<br>Material de prácticas basado en <a href="http://avellano.usal.es/~compi/">la web de la asignatura</a>.</footer>
+</body>
+</html>

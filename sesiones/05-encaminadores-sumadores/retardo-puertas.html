@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retardo en las puertas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Lato:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: columna de lectura (68 ch) con el cronograma a ancho completo; tema único claro del sistema Computadores */
+:root {
+  --papel:#f8f4ec; --papel-elevado:#ffffff; --papel-hundido:#efe8db; --piedra:#e3d9c8; --piedra-fuerte:#857869;
+  --tinta:#2a2420; --tinta-suave:#6b5f55;
+  --vitor:#a8192b; --vitor-suave:#f7dddc; --sobre-vitor:#ffffff;
+  --dorado:#d9a441; --dorado-texto:#8a5a0a; --dorado-suave:#fbeed2;
+  --centenario:#385e9d; --centenario-suave:#dde6f4; --sobre-centenario:#ffffff;
+  --correcto:#1f6f43; --correcto-suave:#dcefe2;
+  --incorrecto:var(--vitor); --incorrecto-suave:var(--vitor-suave);
+  --foco:var(--centenario); --diag-bus:var(--tinta-suave);
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
+  --radius-sm:6px; --radius-md:12px; --radius-lg:20px; --radius-pill:999px;
+  --sombra-tarjeta:0 1px 2px rgba(42,36,32,.06), 0 4px 12px rgba(42,36,32,.06);
+  --font-display:"Bricolage Grotesque","Lato",system-ui,sans-serif;
+  --font-sans:"Lato",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme: light;
+}
+* { box-sizing:border-box; }
+body { background:var(--papel); color:var(--tinta); font-family:var(--font-sans); font-size:17px; line-height:27px; margin:0;
+  padding-block:var(--space-6) var(--space-8); padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+.wrap { max-width:960px; margin:0 auto; display:flex; flex-direction:column; gap:var(--space-7); }
+.prosa { max-width:68ch; }
+.prosa p { margin:0 0 var(--space-4); }
+h1,h2,h3 { font-family:var(--font-display); text-wrap:balance; margin:0; }
+h1 { font-size:40px; line-height:44px; font-weight:700; letter-spacing:-.02em; margin:var(--space-2) 0 var(--space-4); }
+h2 { font-size:28px; line-height:34px; font-weight:600; letter-spacing:-.01em; margin-bottom:var(--space-4); display:inline-block; box-shadow:inset 0 -4px 0 var(--dorado); }
+h3 { font-size:20px; line-height:26px; font-weight:600; }
+.etiqueta { display:inline-flex; align-items:center; gap:var(--space-1); font-size:12px; line-height:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px var(--space-2); border-radius:var(--radius-pill); background:var(--vitor-suave); color:var(--vitor); }
+.etiqueta-neutra { background:var(--papel-hundido); color:var(--tinta-suave); }
+.cabecera { display:flex; align-items:center; gap:var(--space-3); }
+.cabecera img { width:40px; height:40px; }
+code { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:15px; background:var(--papel-hundido); padding:1px 6px; border-radius:var(--radius-sm); }
+pre { font-family:var(--font-mono); font-size:15px; line-height:24px; background:var(--papel-hundido); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); margin:0; overflow-x:auto; }
+pre .kw { color:var(--vitor); font-weight:600; } pre .id { color:var(--centenario); } pre .cm { color:var(--tinta-suave); } pre .hl { background:var(--dorado); color:var(--tinta); border-radius:3px; padding:0 3px; font-weight:600; }
+
+.nota { display:grid; grid-template-columns:20px 1fr; gap:var(--space-3); padding:var(--space-4); border-radius:var(--radius-md); background:var(--papel-elevado); border:1px solid var(--piedra); font-size:15px; line-height:22px; max-width:68ch; }
+.nota svg { width:20px; height:20px; margin-top:1px; }
+.nota b { display:block; margin-bottom:2px; }
+.nota-idea { background:var(--centenario-suave); border-color:var(--centenario-suave); color:var(--centenario); }
+.nota-cuidado { background:var(--dorado-suave); border-color:var(--dorado-suave); color:var(--dorado-texto); }
+.nota-correcto { background:var(--correcto-suave); border-color:var(--correcto-suave); color:var(--correcto); }
+.nota-incorrecto { background:var(--incorrecto-suave); border-color:var(--incorrecto-suave); color:var(--incorrecto); }
+.nota .cuerpo { color:var(--tinta); }
+
+.panel { background:var(--papel-elevado); border-radius:var(--radius-lg); box-shadow:var(--sombra-tarjeta); padding:var(--space-5); display:flex; flex-direction:column; gap:var(--space-5); }
+.grid2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.4fr); gap:var(--space-5); align-items:start; }
+@media (max-width:760px) { .grid2 { grid-template-columns:1fr; } }
+.derecha { display:flex; flex-direction:column; gap:var(--space-4); min-width:0; }
+.pestanas { display:flex; flex-wrap:wrap; gap:var(--space-2); }
+.pestana { font:700 15px/20px var(--font-sans); padding:var(--space-2) var(--space-3); border-radius:var(--radius-pill); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.pestana[aria-selected="true"] { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.boton { font:700 15px/20px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.boton-primario { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.boton-discreto { background:transparent; border-color:transparent; color:var(--vitor); }
+.boton:disabled { opacity:.45; cursor:not-allowed; }
+.boton:focus-visible, .pestana:focus-visible, .bit:focus-visible, input[type=range]:focus-visible { outline:2px solid var(--foco); outline-offset:2px; }
+.fila { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; }
+
+/* esquema */
+.escena svg { width:100%; height:auto; display:block; }
+.linea { stroke:var(--diag-bus); stroke-width:3; fill:none; stroke-linecap:round; stroke-linejoin:round; transition:stroke 200ms ease-out; }
+.linea.uno { stroke:var(--vitor); } .linea.cero { stroke:var(--tinta); }
+.puerta { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2.5; stroke-linejoin:round; }
+.pin { font-family:var(--font-display); font-size:18px; font-weight:600; fill:var(--tinta); }
+.ref { font-family:var(--font-mono); font-size:12px; fill:var(--tinta-suave); }
+.chip { rx:5; } .chip.uno { fill:var(--vitor); } .chip.cero { fill:var(--papel-hundido); stroke:var(--piedra); stroke-width:1.5; }
+.chip-txt { font-family:var(--font-mono); font-size:15px; font-weight:600; } .chip-txt.uno { fill:var(--sobre-vitor); } .chip-txt.cero { fill:var(--tinta); }
+.retardo-tag { fill:var(--dorado); } .retardo-txt { font-family:var(--font-mono); font-size:13px; font-weight:600; fill:var(--tinta); }
+.pendiente { fill:var(--dorado-suave); stroke:var(--dorado-texto); stroke-width:1.5; stroke-dasharray:3 3; }
+
+/* controles */
+.ctl { display:grid; grid-template-columns:auto 1fr; gap:var(--space-2) var(--space-3); align-items:center; font-size:15px; }
+.ctl .nombre { font-family:var(--font-mono); font-weight:600; }
+.bit { width:48px; height:44px; border-radius:var(--radius-sm); border:1px solid var(--piedra); background:var(--papel-hundido); color:var(--tinta); font:600 20px/28px var(--font-mono); cursor:pointer; padding:0; transition:background 200ms ease-out; justify-self:start; }
+.bit.uno { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.rango { display:flex; align-items:center; gap:var(--space-2); }
+input[type=range] { accent-color:var(--vitor); width:140px; }
+.rango output { font-family:var(--font-mono); font-weight:600; min-width:3ch; }
+.reloj { display:flex; align-items:center; gap:var(--space-2); font-family:var(--font-mono); font-weight:600; font-size:17px; }
+.reloj .t { background:var(--tinta); color:var(--papel); padding:2px 10px; border-radius:var(--radius-sm); }
+.lectura { font-size:15px; line-height:22px; color:var(--tinta-suave); margin:0; min-height:44px; }
+.lectura strong { color:var(--tinta); }
+
+/* cronograma */
+.crono { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-3); overflow-x:auto; background:var(--papel-elevado); }
+.crono svg { display:block; min-width:560px; width:100%; height:auto; }
+.onda { fill:none; stroke-width:2.5; stroke-linejoin:round; }
+.onda.in { stroke:var(--tinta); } .onda.out { stroke:var(--vitor); } .onda.ideal { stroke:var(--piedra-fuerte); stroke-dasharray:4 4; stroke-width:2; } .onda.mid { stroke:var(--centenario); }
+.nombre-onda { font-family:var(--font-mono); font-size:13px; font-weight:600; }
+.rejilla { stroke:var(--piedra); stroke-width:1; }
+.tick { font-family:var(--font-mono); font-size:11px; fill:var(--tinta-suave); }
+.cursor { stroke:var(--dorado-texto); stroke-width:2; }
+.banda { fill:var(--dorado); opacity:.35; }
+.cota { stroke:var(--dorado-texto); stroke-width:1.5; }
+.cota-txt { font-family:var(--font-mono); font-size:12px; font-weight:600; fill:var(--dorado-texto); }
+.leyenda { display:flex; flex-wrap:wrap; gap:var(--space-3); font-size:13px; line-height:18px; color:var(--tinta-suave); margin-top:var(--space-2); }
+.leyenda i { display:inline-block; width:18px; height:0; border-top:2.5px solid; vertical-align:middle; margin-right:4px; }
+
+.resumen { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--space-3); }
+.tarjeta { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); background:var(--papel-elevado); font-size:15px; line-height:22px; }
+.tarjeta code { display:inline-block; margin-bottom:var(--space-2); font-weight:600; color:var(--vitor); }
+.reto { display:grid; gap:var(--space-4); }
+.pregunta { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--piedra); border-radius:var(--radius-md); background:var(--papel-elevado); }
+.opciones { display:flex; flex-wrap:wrap; gap:var(--space-2); }
+.opciones .boton[aria-pressed="true"] { background:var(--centenario); border-color:var(--centenario); color:var(--sobre-centenario); }
+.pie { font-size:13px; line-height:18px; color:var(--tinta-suave); }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+.nav-leccion{max-width:960px;margin:0 auto var(--space-5);display:flex;justify-content:space-between;gap:var(--space-3);font-size:14px;flex-wrap:wrap}.nav-leccion a{color:var(--centenario)}.nav-leccion span{color:var(--tinta-suave)}
+footer{max-width:960px;margin:48px auto 0;font-size:13px;line-height:18px;color:var(--tinta-suave)}footer a{color:var(--vitor)}
+</style>
+</head>
+<body>
+<nav class="nav-leccion" aria-label="Navegación de la lección"><a href="index.html">← Índice de la sesión 5</a><span>6 / 7</span><span><a href="parar-simulacion.html">← Parar la simulación</a> · <a href="multiplexor-oe.html">Multiplexor con OE →</a></span></nav>
+<div class="wrap">
+<header class="prosa">
+  <div class="cabecera">
+    <img alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%236b5f55'%3E%3Crect x='18' y='2' width='4' height='8' rx='1'/%3E%3Crect x='30' y='2' width='4' height='8' rx='1'/%3E%3Crect x='42' y='2' width='4' height='8' rx='1'/%3E%3Crect x='18' y='54' width='4' height='8' rx='1'/%3E%3Crect x='30' y='54' width='4' height='8' rx='1'/%3E%3Crect x='42' y='54' width='4' height='8' rx='1'/%3E%3Crect x='2' y='18' width='8' height='4' rx='1'/%3E%3Crect x='2' y='30' width='8' height='4' rx='1'/%3E%3Crect x='2' y='42' width='8' height='4' rx='1'/%3E%3Crect x='54' y='18' width='8' height='4' rx='1'/%3E%3Crect x='54' y='30' width='8' height='4' rx='1'/%3E%3Crect x='54' y='42' width='8' height='4' rx='1'/%3E%3C/g%3E%3Crect x='8' y='8' width='48' height='48' rx='12' fill='%23a8192b'/%3E%3Crect x='16' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='25' y='24' width='7' height='16' rx='2' fill='%23f7dddc' fill-opacity='.35'/%3E%3Crect x='34' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='43' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3C/svg%3E">
+    <span class="etiqueta">Computadores · Lógica digital</span>
+  </div>
+  <h1>Retardo en las puertas</h1>
+  <p>Hasta ahora hemos supuesto que, cuando cambian las entradas de una puerta, la salida se adapta al instante. En un circuito real no es así: los transistores tardan en conmutar y la señal tarda en recorrer el silicio. Ese tiempo es el <strong>retardo de propagación</strong> (<em>propagation delay</em>).</p>
+  <p>Verilog permite modelarlo con mucho detalle, con valores distintos para el paso de 0 a 1, de 1 a 0 y a alta impedancia. En esta primera aproximación usaremos un único valor para todas las transiciones. Se indica tras el tipo de puerta, con <code>#</code> y el retardo entre paréntesis:</p>
+  <pre><span class="kw">and</span> <span class="hl">#(7)</span> <span class="id">a1</span>(salida, entrada1, entrada2);   <span class="cm">// AND con retardo 7</span></pre>
+</header>
+
+<section>
+  <h2>Simulador</h2>
+  <div class="prosa"><p>Cambia las entradas y avanza el tiempo. La salida no responde hasta que han pasado tantas unidades como marca el retardo; la línea punteada muestra lo que haría una puerta ideal, sin retardo.</p></div>
+  <div class="panel">
+    <div class="pestanas" role="tablist" aria-label="Circuito">
+      <button class="pestana" role="tab" data-circ="and" aria-selected="true">Una puerta AND</button>
+      <button class="pestana" role="tab" data-circ="cadena" aria-selected="false">Dos puertas en cadena</button>
+    </div>
+    <div class="grid2">
+      <div class="derecha">
+        <div class="escena"><svg id="esq" viewBox="0 0 400 200" role="img" aria-labelledby="esq-t"><title id="esq-t">Esquema del circuito con los valores actuales</title></svg></div>
+        <div class="ctl" id="ctl"></div>
+        <div class="fila">
+          <div class="reloj">$time = <span class="t" id="tiempo">0</span></div>
+          <button class="boton boton-primario" id="avanzar">Avanzar 1</button>
+          <button class="boton" id="avanzar5">Avanzar 5</button>
+          <button class="boton boton-discreto" id="reset">Reiniciar</button>
+        </div>
+        <p class="lectura" id="lectura"></p>
+      </div>
+      <div class="derecha">
+        <div class="crono"><svg id="crono" viewBox="0 0 640 230" role="img" aria-label="Cronograma"></svg></div>
+        <div class="leyenda"><span><i style="border-color:var(--tinta)"></i>entradas</span><span><i style="border-color:var(--vitor)"></i>salida con retardo</span><span><i style="border-color:var(--piedra-fuerte);border-top-style:dashed"></i>salida ideal (sin retardo)</span><span><i style="border-color:var(--dorado);border-top-width:8px"></i>retardo en curso</span></div>
+        <pre id="verilog"></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Qué conviene saber</h2>
+  <div class="resumen">
+    <div class="tarjeta"><code>#(7)</code><br>Las unidades son las del simulador (las que se usan en <code>#5</code> en el banco de pruebas), no nanosegundos salvo que se declare una <code>`timescale</code>.</div>
+    <div class="tarjeta"><code>and #(7) a1(...)</code><br>El retardo va entre el tipo de puerta y el nombre de instancia. Sin <code>#</code>, el retardo es 0: la puerta ideal de hasta ahora.</div>
+    <div class="tarjeta"><code>and #(7) a1(...); not #(3) n1(...)</code><br>Los retardos de puertas en cadena se suman: la salida final tarda 7 + 3 = 10 unidades en reflejar un cambio en la entrada.</div>
+    <div class="tarjeta"><code>#(5, 8, 3)</code><br>La forma fina: retardo de subida, de bajada y a alta impedancia. No la usaremos todavía, pero conviene saber que existe.</div>
+  </div>
+  <p style="margin-top:var(--space-4)"></p>
+  <div class="nota nota-cuidado">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
+    <div><b>Cuidado</b><div class="cuerpo">Si una entrada cambia dos veces en menos tiempo que el retardo (un pulso más corto que 7 unidades en una AND <code>#(7)</code>), la puerta no llega a reflejar el primer cambio: el pulso se pierde. Este modelo se llama <em>retardo inercial</em> y es el que usa Verilog para las puertas. Pruébalo en el simulador: pon a = 1 y vuelve a 0 antes de 7 unidades.</div></div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Compruébalo</h2>
+  <div class="reto" id="reto"></div>
+  <p class="pie">Las respuestas se corrigen en la página; nada se envía a ningún sitio.</p>
+</section>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var cls = function(v){ return v ? 'uno' : 'cero'; };
+  var AND = function(a,b){ return a&b; }, NOT = function(a){ return a?0:1; };
+  var sim;
+  function reset(circ){
+    sim = { circ:circ||(sim?sim.circ:'and'), t:0, a:0, b:1, d1:7, d2:3, hist:[], pend1:null, pend2:null };
+    sim.y1 = 0; sim.y = sim.circ==='cadena' ? NOT(0) : 0; // valores iniciales estables para a=0,b=1
+    sim.hist.push(snapshot());
+    render();
+  }
+  function ideal(){ var y1 = AND(sim.a, sim.b); return sim.circ==='cadena' ? NOT(y1) : y1; }
+  function snapshot(){ return { t:sim.t, a:sim.a, b:sim.b, y1:sim.y1, y:sim.y, ideal:ideal() }; }
+  // modelo de retardo inercial: al cambiar la entrada se programa la salida en t+d; si antes la salida deseada vuelve a ser la actual, se cancela
+  function programar(){
+    var d1 = AND(sim.a, sim.b);
+    if (d1 !== sim.y1) sim.pend1 = { t:sim.t + sim.d1, v:d1 }; else sim.pend1 = null;
+  }
+  function programar2(){
+    if (sim.circ!=='cadena') return;
+    var d2 = NOT(sim.y1);
+    if (d2 !== sim.y) sim.pend2 = { t:sim.t + sim.d2, v:d2 }; else sim.pend2 = null;
+  }
+  function avanzar(n){
+    for (var i=0;i<n;i++){
+      sim.t++;
+      if (sim.pend1 && sim.pend1.t===sim.t){ sim.y1 = sim.pend1.v; sim.pend1 = null; programar2(); }
+      if (sim.pend2 && sim.pend2.t===sim.t){ sim.y = sim.pend2.v; sim.pend2 = null; }
+      if (sim.circ!=='cadena') sim.y = sim.y1;
+      sim.hist.push(snapshot());
+      if (sim.hist.length > 41) sim.hist.shift();
+    }
+    render();
+  }
+  function cambiar(k, v){ sim[k] = v; programar(); sim.hist[sim.hist.length-1] = snapshot(); render(); }
+
+  function esquema(){
+    var h = '', cad = sim.circ==='cadena';
+    var chip = function(v,x,y){ return '<rect class="chip '+cls(v)+'" x="'+(x-12)+'" y="'+(y-12)+'" width="24" height="24"/><text class="chip-txt '+cls(v)+'" x="'+x+'" y="'+(y+5)+'" text-anchor="middle">'+v+'</text>'; };
+    var tag = function(x,y,d){ return '<rect class="retardo-tag" x="'+(x-20)+'" y="'+(y-11)+'" width="40" height="22" rx="11"/><text class="retardo-txt" x="'+x+'" y="'+(y+4)+'" text-anchor="middle">#'+d+'</text>'; };
+    h += '<text class="pin" x="16" y="85">a</text>'+chip(sim.a,56,80)+'<polyline class="linea '+cls(sim.a)+'" points="68,80 140,80"/>';
+    h += '<text class="pin" x="16" y="125">b</text>'+chip(sim.b,56,120)+'<polyline class="linea '+cls(sim.b)+'" points="68,120 140,120"/>';
+    h += '<path class="puerta" d="M140 72 h26 a28 28 0 0 1 0 56 h-26 z"/>' + tag(167, 60, sim.d1) + '<text class="ref" x="167" y="150" text-anchor="middle">a1</text>';
+    if (!cad){
+      h += '<polyline class="linea '+cls(sim.y)+'" points="194,100 290,100"/>'+chip(sim.y,302,100)+'<text class="pin" x="326" y="105">salida</text>';
+      if (sim.pend1) h += '<rect class="pendiente" x="200" y="108" width="84" height="22" rx="6"/><text class="ref" x="242" y="123" text-anchor="middle" style="fill:var(--dorado-texto)">→ '+sim.pend1.v+' en t='+sim.pend1.t+'</text>';
+    } else {
+      h += '<polyline class="linea '+cls(sim.y1)+'" points="194,100 250,100"/>'+chip(sim.y1,230,100)+'<text class="ref" x="230" y="135" text-anchor="middle">w</text>';
+      h += '<polygon class="puerta" points="250,84 250,116 278,100"/><circle class="puerta" cx="283" cy="100" r="5"/>' + tag(266, 60, sim.d2) + '<text class="ref" x="266" y="150" text-anchor="middle">n1</text>';
+      h += '<polyline class="linea '+cls(sim.y)+'" points="288,100 330,100"/>'+chip(sim.y,342,100)+'<text class="pin" x="362" y="105">s</text>';
+      if (sim.pend1) h += '<rect class="pendiente" x="196" y="160" width="100" height="22" rx="6"/><text class="ref" x="246" y="175" text-anchor="middle" style="fill:var(--dorado-texto)">w → '+sim.pend1.v+' en t='+sim.pend1.t+'</text>';
+      if (sim.pend2) h += '<rect class="pendiente" x="300" y="160" width="96" height="22" rx="6"/><text class="ref" x="348" y="175" text-anchor="middle" style="fill:var(--dorado-texto)">s → '+sim.pend2.v+' en t='+sim.pend2.t+'</text>';
+    }
+    $('esq').innerHTML = h;
+  }
+
+  function crono(){
+    var H = sim.hist, n = H.length, x0 = 70, x1 = 620, paso = (x1-x0)/40, t0 = H[0].t, cad = sim.circ==='cadena';
+    var filas = cad ? [['a','a','in'],['b','b','in'],['w','y1','mid'],['s','y','out']] : [['a','a','in'],['b','b','in'],['salida','y','out']];
+    var alto = 36, top = 18, h = '';
+    var X = function(t){ return x0 + (t - t0)*paso; };
+    // rejilla
+    for (var t=t0; t<=t0+40; t+=5){ h += '<line class="rejilla" x1="'+X(t)+'" y1="'+(top-6)+'" x2="'+X(t)+'" y2="'+(top+filas.length*alto)+'"/><text class="tick" x="'+X(t)+'" y="'+(top+filas.length*alto+14)+'" text-anchor="middle">'+t+'</text>'; }
+    filas.forEach(function(f, i){
+      var yb = top + i*alto + 26, yt = yb - 20, key = f[1];
+      h += '<text class="nombre-onda" x="12" y="'+(yb-6)+'" style="fill:'+(f[2]==='out'?'var(--vitor)':f[2]==='mid'?'var(--centenario)':'var(--tinta)')+'">'+f[0]+'</text>';
+      var pts = [], ptsI = [];
+      for (var k=0;k<n;k++){ var y = H[k][key] ? yt : yb, x = X(H[k].t); if (k>0 && H[k-1][key]!==H[k][key]) pts.push(x+','+(H[k-1][key]?yt:yb)); pts.push(x+','+y); }
+      pts.push(X(H[n-1].t+1)+','+(H[n-1][key]?yt:yb));
+      if (key==='y'){
+        for (var k2=0;k2<n;k2++){ var yi = H[k2].ideal ? yt : yb, xi = X(H[k2].t); if (k2>0 && H[k2-1].ideal!==H[k2].ideal) ptsI.push(xi+','+(H[k2-1].ideal?yt:yb)); ptsI.push(xi+','+yi); }
+        ptsI.push(X(H[n-1].t+1)+','+(H[n-1].ideal?yt:yb));
+        h += '<polyline class="onda ideal" points="'+ptsI.join(' ')+'"/>';
+      }
+      h += '<polyline class="onda '+f[2]+'" points="'+pts.join(' ')+'"/>';
+    });
+    // bandas de retardo en curso
+    var bandas = [];
+    if (sim.pend1) bandas.push({ desde:sim.pend1.t - sim.d1, hasta:sim.pend1.t, fila: cad ? 2 : 2, d:sim.d1 });
+    if (sim.pend2) bandas.push({ desde:sim.pend2.t - sim.d2, hasta:sim.pend2.t, fila:3, d:sim.d2 });
+    bandas.forEach(function(bd){ var ya = top + bd.fila*alto + 2; h += '<rect class="banda" x="'+X(Math.max(bd.desde,t0))+'" y="'+ya+'" width="'+Math.max(0,(Math.min(bd.hasta,t0+40)-Math.max(bd.desde,t0))*paso)+'" height="'+(alto-6)+'"/>'; });
+    // cota del último retardo completado en salida: buscar último flanco de y y el flanco de ideal que lo causó
+    for (var k3=n-1;k3>0;k3--){ if (H[k3].y!==H[k3-1].y){ var tf = H[k3].t; for (var k4=k3-1;k4>=0;k4--){ if (k4===0 || H[k4].ideal!==H[k4-1].ideal){ var ti = H[k4].t; if (tf-ti>0 && tf-ti<=20){ var yc = top + (filas.length-1)*alto + alto - 2; h += '<line class="cota" x1="'+X(ti)+'" y1="'+yc+'" x2="'+X(tf)+'" y2="'+yc+'"/><line class="cota" x1="'+X(ti)+'" y1="'+(yc-5)+'" x2="'+X(ti)+'" y2="'+(yc+5)+'"/><line class="cota" x1="'+X(tf)+'" y1="'+(yc-5)+'" x2="'+X(tf)+'" y2="'+(yc+5)+'"/><text class="cota-txt" x="'+((X(ti)+X(tf))/2)+'" y="'+(yc-4)+'" text-anchor="middle">'+(tf-ti)+'</text>'; } break; } } break; } }
+    // cursor
+    h += '<line class="cursor" x1="'+X(sim.t)+'" y1="'+(top-10)+'" x2="'+X(sim.t)+'" y2="'+(top+filas.length*alto)+'"/>';
+    $('crono').setAttribute('viewBox','0 0 640 '+(top+filas.length*alto+24));
+    $('crono').innerHTML = h;
+  }
+
+  function render(){
+    esquema(); crono();
+    var C = $('ctl'); C.innerHTML = '';
+    C.innerHTML += '<span class="nombre">a</span><button class="bit '+cls(sim.a)+'" id="ba" aria-pressed="'+!!sim.a+'" aria-label="Entrada a, valor '+sim.a+'">'+sim.a+'</button>';
+    C.innerHTML += '<span class="nombre">b</span><button class="bit '+cls(sim.b)+'" id="bb" aria-pressed="'+!!sim.b+'" aria-label="Entrada b, valor '+sim.b+'">'+sim.b+'</button>';
+    C.innerHTML += '<span class="nombre">#a1</span><span class="rango"><input type="range" id="r1" min="0" max="12" value="'+sim.d1+'" aria-label="Retardo de la AND"><output>'+sim.d1+'</output></span>';
+    if (sim.circ==='cadena') C.innerHTML += '<span class="nombre">#n1</span><span class="rango"><input type="range" id="r2" min="0" max="12" value="'+sim.d2+'" aria-label="Retardo del NOT"><output>'+sim.d2+'</output></span>';
+    $('ba').addEventListener('click', function(){ cambiar('a', sim.a?0:1); });
+    $('bb').addEventListener('click', function(){ cambiar('b', sim.b?0:1); });
+    $('r1').addEventListener('input', function(e){ sim.d1 = +e.target.value; programar(); render(); });
+    if ($('r2')) $('r2').addEventListener('input', function(e){ sim.d2 = +e.target.value; programar2(); render(); });
+    $('tiempo').textContent = sim.t;
+    var cad = sim.circ==='cadena';
+    var L;
+    if (sim.pend1 || sim.pend2){
+      var p = sim.pend2 && !sim.pend1 ? sim.pend2 : sim.pend1;
+      L = 'Las entradas ya han cambiado, pero la '+(p===sim.pend1?'AND':'NOT')+' todavía no ha reaccionado: su salida pasará a <strong>'+p.v+' en t = '+p.t+'</strong>, es decir, dentro de '+(p.t-sim.t)+' unidades.'+(cad && sim.pend1 ? ' Después, el NOT tardará otras '+sim.d2+'.' : '');
+    } else L = 'Todo estable: la salida vale <strong>'+sim.y+'</strong>'+(cad?' (w = '+sim.y1+')':'')+'. Cambia a o b y avanza el tiempo.';
+    $('lectura').innerHTML = L;
+    $('verilog').innerHTML = cad
+      ? '<span class="kw">wire</span> w, s;\n<span class="kw">and</span> <span class="hl">#('+sim.d1+')</span> <span class="id">a1</span>(w, a, b);\n<span class="kw">not</span> <span class="hl">#('+sim.d2+')</span> <span class="id">n1</span>(s, w);\n<span class="cm">// retardo total a→s: '+sim.d1+' + '+sim.d2+' = '+(sim.d1+sim.d2)+'</span>'
+      : '<span class="kw">and</span> <span class="hl">#('+sim.d1+')</span> <span class="id">a1</span>(salida, a, b);   <span class="cm">// AND con retardo '+sim.d1+'</span>';
+  }
+
+  $('avanzar').addEventListener('click', function(){ avanzar(1); });
+  $('avanzar5').addEventListener('click', function(){ avanzar(5); });
+  $('reset').addEventListener('click', function(){ reset(); });
+  document.querySelectorAll('.pestana').forEach(function(b){ b.addEventListener('click', function(){ document.querySelectorAll('.pestana').forEach(function(x){ x.setAttribute('aria-selected', x===b?'true':'false'); }); reset(b.dataset.circ); }); });
+  reset('and');
+
+  /* Reto */
+  var PREG = [
+    { q:'En <code>and #(7) a1(s, a, b);</code>, con b = 1, la entrada a pasa de 0 a 1 en t = 10. ¿Cuándo cambia s?', ops:['En t = 10','En t = 17','En t = 7'], ok:1, exp:'La salida refleja el cambio 7 unidades después: en t = 17.' },
+    { q:'Una AND <code>#(7)</code> alimenta un NOT <code>#(3)</code>. Un cambio en la entrada de la AND tarda en llegar a la salida del NOT…', ops:['7 unidades','3 unidades','10 unidades'], ok:2, exp:'Los retardos en cadena se suman: 7 + 3 = 10.' },
+    { q:'¿Dónde se escribe el retardo?', ops:['<code>and a1 #(7)(s, a, b);</code>','<code>and #(7) a1(s, a, b);</code>','<code>#(7) and a1(s, a, b);</code>'], ok:1, exp:'Entre el tipo de puerta y el nombre de la instancia.' },
+    { q:'Una puerta sin <code>#</code> tiene retardo…', ops:['Desconocido (x)','Cero: es la puerta ideal','1 unidad'], ok:1, exp:'Sin especificar retardo, Verilog lo toma como 0, que es lo que habíamos supuesto hasta ahora.' }
+  ];
+  var R = $('reto');
+  PREG.forEach(function(p, i){
+    var div = document.createElement('div'); div.className = 'pregunta';
+    div.innerHTML = '<div><span class="etiqueta etiqueta-neutra">Pregunta '+(i+1)+'</span></div><div>'+p.q+'</div><div class="opciones" role="group" aria-label="Opciones de la pregunta '+(i+1)+'">'+p.ops.map(function(o,j){ return '<button class="boton" data-j="'+j+'" aria-pressed="false">'+o.replace(/<code>/g,'<code style="background:transparent;padding:0;color:inherit">')+'</button>'; }).join('')+'</div><div class="feedback" aria-live="polite"></div>';
+    R.appendChild(div);
+    div.querySelectorAll('.opciones .boton').forEach(function(b){
+      b.addEventListener('click', function(){
+        div.querySelectorAll('.opciones .boton').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+        b.setAttribute('aria-pressed','true');
+        var ok = +b.dataset.j === p.ok;
+        div.querySelector('.feedback').innerHTML = '<div class="nota '+(ok?'nota-correcto':'nota-incorrecto')+'" role="status">'
+          + (ok ? '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l4 4 10-9"/></svg>' : '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15"/></svg>')
+          + '<div><b>'+(ok?'Correcto':'Incorrecto')+'</b><div class="cuerpo">'+p.exp+'</div></div></div>';
+      });
+    });
+  });
+})();
+</script>
+<footer>Computadores I · Grado en Ingeniería Informática · Daniel Hernández de la Iglesia (PB3)<br>Material de prácticas basado en <a href="http://avellano.usal.es/~compi/">la web de la asignatura</a>.</footer>
+</body>
+</html>

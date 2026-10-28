@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multiplexor con OE</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Lato:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: columna de lectura (68 ch); cada paso del vídeo es una sección con su simulador a ancho completo; tema único claro del sistema Computadores */
+:root {
+  --papel:#f8f4ec; --papel-elevado:#ffffff; --papel-hundido:#efe8db; --piedra:#e3d9c8; --piedra-fuerte:#857869;
+  --tinta:#2a2420; --tinta-suave:#6b5f55;
+  --vitor:#a8192b; --vitor-suave:#f7dddc; --sobre-vitor:#ffffff;
+  --dorado:#d9a441; --dorado-texto:#8a5a0a; --dorado-suave:#fbeed2;
+  --centenario:#385e9d; --centenario-suave:#dde6f4; --sobre-centenario:#ffffff;
+  --correcto:#1f6f43; --correcto-suave:#dcefe2;
+  --incorrecto:var(--vitor); --incorrecto-suave:var(--vitor-suave);
+  --foco:var(--centenario); --diag-bus:var(--tinta-suave);
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
+  --radius-sm:6px; --radius-md:12px; --radius-lg:20px; --radius-pill:999px;
+  --sombra-tarjeta:0 1px 2px rgba(42,36,32,.06), 0 4px 12px rgba(42,36,32,.06);
+  --font-display:"Bricolage Grotesque","Lato",system-ui,sans-serif;
+  --font-sans:"Lato",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme: light;
+}
+* { box-sizing:border-box; }
+body { background:var(--papel); color:var(--tinta); font-family:var(--font-sans); font-size:17px; line-height:27px; margin:0;
+  padding-block:var(--space-6) var(--space-8); padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+.wrap { max-width:960px; margin:0 auto; display:flex; flex-direction:column; gap:var(--space-7); }
+.prosa { max-width:68ch; }
+.prosa p { margin:0 0 var(--space-4); }
+h1,h2,h3 { font-family:var(--font-display); text-wrap:balance; margin:0; }
+h1 { font-size:40px; line-height:44px; font-weight:700; letter-spacing:-.02em; margin:var(--space-2) 0 var(--space-4); }
+h2 { font-size:28px; line-height:34px; font-weight:600; letter-spacing:-.01em; margin-bottom:var(--space-4); display:inline-block; box-shadow:inset 0 -4px 0 var(--dorado); }
+h3 { font-size:20px; line-height:26px; font-weight:600; }
+.etiqueta { display:inline-flex; align-items:center; gap:var(--space-1); font-size:12px; line-height:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px var(--space-2); border-radius:var(--radius-pill); background:var(--vitor-suave); color:var(--vitor); }
+.etiqueta-neutra { background:var(--papel-hundido); color:var(--tinta-suave); }
+.etiqueta-centenario { background:var(--centenario-suave); color:var(--centenario); }
+.cabecera { display:flex; align-items:center; gap:var(--space-3); }
+.cabecera img { width:40px; height:40px; }
+code { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:15px; background:var(--papel-hundido); padding:1px 6px; border-radius:var(--radius-sm); }
+pre { font-family:var(--font-mono); font-size:14px; line-height:22px; background:var(--papel-hundido); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); margin:0; overflow-x:auto; }
+pre .kw { color:var(--vitor); font-weight:600; } pre .id { color:var(--centenario); } pre .cm { color:var(--tinta-suave); } pre .sys { color:var(--dorado-texto); font-weight:600; }
+pre .hl { background:var(--dorado); color:var(--tinta); border-radius:3px; padding:0 3px; }
+pre .fila { display:block; margin:0 calc(-1 * var(--space-4)); padding:0 var(--space-4); }
+pre .fila.actual { background:var(--dorado); color:var(--tinta); }
+pre .fila.actual .cm { color:var(--tinta); opacity:.8; }
+pre.consola { background:var(--tinta); color:var(--papel); min-height:80px; }
+pre.consola .nuevo { background:rgba(217,164,65,.28); }
+pre.consola .prompt { color:#9fc5ff; } pre.consola .z { color:#c9b99a; } pre.consola .aviso { color:var(--dorado); font-weight:600; }
+
+.nota { display:grid; grid-template-columns:20px 1fr; gap:var(--space-3); padding:var(--space-4); border-radius:var(--radius-md); background:var(--papel-elevado); border:1px solid var(--piedra); font-size:15px; line-height:22px; max-width:68ch; }
+.nota svg { width:20px; height:20px; margin-top:1px; }
+.nota b { display:block; margin-bottom:2px; }
+.nota-idea { background:var(--centenario-suave); border-color:var(--centenario-suave); color:var(--centenario); }
+.nota-cuidado { background:var(--dorado-suave); border-color:var(--dorado-suave); color:var(--dorado-texto); }
+.nota-correcto { background:var(--correcto-suave); border-color:var(--correcto-suave); color:var(--correcto); }
+.nota-incorrecto { background:var(--incorrecto-suave); border-color:var(--incorrecto-suave); color:var(--incorrecto); }
+.nota .cuerpo { color:var(--tinta); }
+
+.paso-cab { display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-3); }
+.paso-num { width:32px; height:32px; border-radius:50%; display:inline-grid; place-items:center; font:700 15px var(--font-mono); background:var(--dorado); color:var(--tinta); flex:none; }
+.panel { background:var(--papel-elevado); border-radius:var(--radius-lg); box-shadow:var(--sombra-tarjeta); padding:var(--space-5); display:flex; flex-direction:column; gap:var(--space-5); }
+.grid2 { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:var(--space-5); align-items:start; }
+@media (max-width:760px) { .grid2 { grid-template-columns:1fr; } }
+.escena { min-width:0; } .escena svg { width:100%; height:auto; display:block; }
+.derecha { display:flex; flex-direction:column; gap:var(--space-4); min-width:0; }
+.boton { font:700 15px/20px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.boton-primario { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.boton-discreto { background:transparent; border-color:transparent; color:var(--vitor); }
+.boton:disabled { opacity:.45; cursor:not-allowed; }
+.boton:focus-visible, .bit:focus-visible { outline:2px solid var(--foco); outline-offset:2px; }
+.fila { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; }
+
+/* esquema */
+.linea { stroke:var(--diag-bus); stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; transition:stroke 200ms ease-out; }
+.linea.uno { stroke:var(--vitor); } .linea.cero { stroke:var(--tinta); } .linea.z { stroke:var(--piedra); stroke-dasharray:5 6; }
+.linea.gruesa { stroke-width:3.5; }
+.puerta { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2; stroke-linejoin:round; }
+.puerta.activa { fill:var(--vitor-suave); stroke:var(--vitor); }
+.caja { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2; rx:4; }
+.caja.activa { stroke:var(--vitor); stroke-width:3; } .caja.apagada { stroke:var(--piedra-fuerte); stroke-dasharray:6 4; }
+.caja-mod { fill:none; stroke:var(--piedra-fuerte); stroke-width:1.5; stroke-dasharray:6 5; }
+.nodo { fill:var(--tinta); }
+.pin { font-family:var(--font-display); font-size:15px; font-weight:600; fill:var(--tinta); }
+.pin.g { font-size:13px; }
+.ref { font-family:var(--font-mono); font-size:11px; fill:var(--tinta-suave); }
+.rot { font-family:var(--font-display); font-size:18px; font-weight:600; fill:var(--tinta); }
+.chip { rx:4; } .chip.uno { fill:var(--vitor); } .chip.cero { fill:var(--papel-hundido); stroke:var(--piedra); stroke-width:1.5; } .chip.z { fill:var(--papel-elevado); stroke:var(--piedra-fuerte); stroke-width:1.5; stroke-dasharray:3 3; } .chip.x { fill:var(--dorado); }
+.chip-txt { font-family:var(--font-mono); font-size:13px; font-weight:600; } .chip-txt.uno { fill:var(--sobre-vitor); } .chip-txt.cero { fill:var(--tinta); } .chip-txt.z { fill:var(--tinta-suave); } .chip-txt.x { fill:var(--tinta); }
+
+/* controles de bits */
+.ctl { display:flex; flex-wrap:wrap; gap:var(--space-4) var(--space-5); align-items:flex-end; }
+.grupo { display:flex; flex-direction:column; gap:var(--space-1); }
+.grupo .nombre { font:700 12px/16px var(--font-sans); letter-spacing:.08em; text-transform:uppercase; color:var(--tinta-suave); }
+.bits { display:inline-flex; gap:var(--space-1); align-items:flex-end; }
+.bits .sep { width:var(--space-2); }
+.bitctl { display:inline-flex; flex-direction:column; align-items:center; gap:1px; }
+.bitctl span { font:400 10px/13px var(--font-mono); color:var(--tinta-suave); }
+.bit { width:34px; height:40px; border-radius:var(--radius-sm); border:1px solid var(--piedra); background:var(--papel-hundido); color:var(--tinta); font:600 18px/26px var(--font-mono); cursor:pointer; padding:0; transition:background 200ms ease-out, color 200ms ease-out; }
+.bit.uno { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.bit.sel { outline:3px solid var(--dorado); outline-offset:-3px; }
+.salida { display:inline-flex; align-items:center; gap:var(--space-2); font-size:15px; }
+.salida .y { font:600 20px/28px var(--font-mono); min-width:44px; height:40px; display:inline-grid; place-items:center; border-radius:var(--radius-sm); padding:0 var(--space-2); }
+.y.uno { background:var(--vitor); color:var(--sobre-vitor); } .y.cero { background:var(--tinta); color:var(--papel); } .y.z { background:var(--papel-elevado); color:var(--tinta-suave); border:1.5px dashed var(--piedra-fuerte); }
+.lectura { font-size:15px; line-height:22px; color:var(--tinta-suave); margin:0; }
+.lectura strong { color:var(--tinta); }
+table.tv { border-collapse:collapse; font-family:var(--font-mono); font-size:15px; }
+.tv th { font-family:var(--font-display); font-weight:600; padding:var(--space-1) var(--space-3); border-bottom:2px solid var(--tinta); text-align:center; }
+.tv td { padding:var(--space-1) var(--space-3); text-align:center; border-bottom:1px solid var(--piedra); }
+.tv th:last-child, .tv td:last-child { border-left:2px solid var(--tinta); }
+.tv tr.activa td { background:var(--dorado); font-weight:600; }
+.tv td.z { color:var(--tinta-suave); }
+
+/* banco */
+.pasos { display:flex; flex-wrap:wrap; gap:var(--space-1); align-items:center; font-size:13px; }
+.paso { display:inline-flex; align-items:center; gap:5px; padding:2px 9px 2px 2px; border-radius:var(--radius-pill); color:var(--tinta-suave); }
+.paso .n { width:20px; height:20px; border-radius:50%; display:inline-grid; place-items:center; font:600 11px var(--font-mono); background:var(--papel-hundido); color:var(--tinta-suave); border:1px solid var(--piedra); }
+.paso.hecho .n { background:var(--papel-elevado); color:var(--correcto); border-color:var(--correcto); }
+.paso.actual { background:var(--dorado); color:var(--tinta); font-weight:700; } .paso.actual .n { background:var(--tinta); color:var(--papel); border-color:var(--tinta); }
+.pie { font-size:13px; line-height:18px; color:var(--tinta-suave); }
+.resumen { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--space-3); }
+.tarjeta { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); background:var(--papel-elevado); font-size:15px; line-height:22px; }
+.tarjeta code { display:inline-block; margin-bottom:var(--space-2); font-weight:600; color:var(--vitor); }
+.reto { display:grid; gap:var(--space-4); }
+.pregunta { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--piedra); border-radius:var(--radius-md); background:var(--papel-elevado); }
+.opciones { display:flex; flex-wrap:wrap; gap:var(--space-2); }
+.opciones .boton[aria-pressed="true"] { background:var(--centenario); border-color:var(--centenario); color:var(--sobre-centenario); }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+.nav-leccion{max-width:960px;margin:0 auto var(--space-5);display:flex;justify-content:space-between;gap:var(--space-3);font-size:14px;flex-wrap:wrap}.nav-leccion a{color:var(--centenario)}.nav-leccion span{color:var(--tinta-suave)}
+footer{max-width:960px;margin:48px auto 0;font-size:13px;line-height:18px;color:var(--tinta-suave)}footer a{color:var(--vitor)}
+</style>
+</head>
+<body>
+<nav class="nav-leccion" aria-label="Navegación de la lección"><a href="index.html">← Índice de la sesión 5</a><span>7 / 7</span><span><a href="retardo-puertas.html">← Retardo en las puertas</a> · </span></nav>
+<div class="wrap">
+<header class="prosa">
+  <div class="cabecera">
+    <img alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%236b5f55'%3E%3Crect x='18' y='2' width='4' height='8' rx='1'/%3E%3Crect x='30' y='2' width='4' height='8' rx='1'/%3E%3Crect x='42' y='2' width='4' height='8' rx='1'/%3E%3Crect x='18' y='54' width='4' height='8' rx='1'/%3E%3Crect x='30' y='54' width='4' height='8' rx='1'/%3E%3Crect x='42' y='54' width='4' height='8' rx='1'/%3E%3Crect x='2' y='18' width='8' height='4' rx='1'/%3E%3Crect x='2' y='30' width='8' height='4' rx='1'/%3E%3Crect x='2' y='42' width='8' height='4' rx='1'/%3E%3Crect x='54' y='18' width='8' height='4' rx='1'/%3E%3Crect x='54' y='30' width='8' height='4' rx='1'/%3E%3Crect x='54' y='42' width='8' height='4' rx='1'/%3E%3C/g%3E%3Crect x='8' y='8' width='48' height='48' rx='12' fill='%23a8192b'/%3E%3Crect x='16' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='25' y='24' width='7' height='16' rx='2' fill='%23f7dddc' fill-opacity='.35'/%3E%3Crect x='34' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='43' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3C/svg%3E">
+    <span class="etiqueta">Computadores · Lógica digital · Ejercicio</span>
+  </div>
+  <h1>Multiplexor con OE</h1>
+  <p><strong>Enunciado.</strong> Constrúyase un módulo multiplexor 4x1 con línea de control de salida OE, de modo que si dicha línea está inactiva, la salida Y esté en alta impedancia. En caso contrario, funciona como multiplexor normal. Con dos de estos multiplexores constrúyase otro módulo multiplexor 8x1 según el esquema de la figura. Pruébese con ayuda de un módulo auxiliar.</p>
+  <p>Primero realizamos el 4x1 a nivel de puertas, después la línea OE con un búfer triestado, un banco de pruebas, y con dos de estos módulos el 8x1.</p>
+</header>
+
+<!-- ============ PASO 1 ============ -->
+<section>
+  <div class="paso-cab"><span class="paso-num">1</span><h2>El multiplexor 4x1 con OE</h2></div>
+  <div class="prosa"><p>Un multiplexor 4x1 elige una de las cuatro entradas D₀…D₃ según S₁S₀. A nivel de puertas: dos NOT para obtener S̄₁ y S̄₀, cuatro AND de tres entradas (cada una «reconoce» un valor de S y deja pasar su D) y una OR que las junta. La novedad es la salida: en lugar de sacar la OR directamente, pasa por un <code>bufif1</code> controlado por OE. Si OE = 0, el búfer corta y Y queda en z.</p></div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="escena"><svg id="esq4" viewBox="0 0 560 330" role="img" aria-labelledby="esq4-t"><title id="esq4-t">Multiplexor 4x1 a nivel de puertas con bufif1 de salida</title></svg></div>
+      <div class="derecha">
+        <div class="ctl">
+          <div class="grupo"><span class="nombre">D[3:0]</span><div class="bits" id="d4"></div></div>
+          <div class="grupo"><span class="nombre">S[1:0]</span><div class="bits" id="s4"></div></div>
+          <div class="grupo"><span class="nombre">OE</span><div class="bits" id="oe4"></div></div>
+          <div class="salida"><span>Y =</span><span class="y" id="y4"></span></div>
+        </div>
+        <p class="lectura" id="lec4"></p>
+        <table class="tv" id="tv4">
+          <thead><tr><th>OE</th><th>S₁</th><th>S₀</th><th>Y</th></tr></thead>
+          <tbody>
+            <tr data-oe="0"><td>0</td><td>x</td><td>x</td><td class="z">z</td></tr>
+            <tr data-oe="1" data-s="0"><td>1</td><td>0</td><td>0</td><td>D₀</td></tr>
+            <tr data-oe="1" data-s="1"><td>1</td><td>0</td><td>1</td><td>D₁</td></tr>
+            <tr data-oe="1" data-s="2"><td>1</td><td>1</td><td>0</td><td>D₂</td></tr>
+            <tr data-oe="1" data-s="3"><td>1</td><td>1</td><td>1</td><td>D₃</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <pre id="cod4"></pre>
+  </div>
+  <div class="prosa" style="margin-top:var(--space-4)">
+    <div class="nota nota-idea">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 16h4"/></svg>
+      <div><b>Idea</b><div class="cuerpo">Los nombres de los hilos cuentan lo que llevan: <code>D0nS1nS0</code> es «D₀ y no S₁ y no S₀», el término que vale 1 solo cuando S = 00 y D₀ = 1. La salida interna de la OR se llama <code>YY</code> porque <code>Y</code> ya es el puerto de salida, que ahora es <code>tri</code>: puede valer z.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PASO 2 ============ -->
+<section>
+  <div class="paso-cab"><span class="paso-num">2</span><h2>Probar el 4x1</h2></div>
+  <div class="prosa"><p>El módulo auxiliar declara registros para las entradas (<code>reg</code>), un <code>tri</code> para la salida, instancia el multiplexor y recorre todos los valores de S con un bucle <code>while</code>. Primero con OE = 1 y luego con OE = 0, para comprobar la alta impedancia. Con D = 1101, la salida debe ir dando D₀, D₁, D₂, D₃ = 1, 0, 1, 1.</p></div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="derecha"><pre id="tb4"></pre></div>
+      <div class="derecha">
+        <div class="pasos" id="pasos4"></div>
+        <div class="fila"><button class="boton boton-primario" id="run4">Ejecutar siguiente</button><button class="boton" id="runall4">Ejecutar todo</button><button class="boton boton-discreto" id="reset4">Reiniciar</button></div>
+        <p class="lectura" id="lectb4"></p>
+        <pre class="consola" id="con4" aria-live="polite"></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PASO 3 ============ -->
+<section>
+  <div class="paso-cab"><span class="paso-num">3</span><h2>El 8x1 con dos 4x1</h2></div>
+  <div class="prosa"><p>Ocho entradas necesitan tres bits de selección. S₁S₀ van a los dos multiplexores igual; S₂ decide cuál de los dos habla: el primero (D₀…D₃) recibe S̄₂ en OE, el segundo (D₄…D₇) recibe S₂. Como las dos salidas Y están unidas en un mismo cable y solo una está habilitada cada vez, el cable toma el valor del multiplexor activo y el otro, en z, no estorba. Es exactamente la situación de los búferes triestado sobre un bus.</p></div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="escena"><svg id="esq8" viewBox="0 0 560 360" role="img" aria-labelledby="esq8-t"><title id="esq8-t">Multiplexor 8x1 construido con dos 4x1 y un inversor</title></svg></div>
+      <div class="derecha">
+        <div class="ctl">
+          <div class="grupo"><span class="nombre">D[7:0]</span><div class="bits" id="d8"></div></div>
+          <div class="grupo"><span class="nombre">S[2:0]</span><div class="bits" id="s8"></div></div>
+          <div class="salida"><span>Y =</span><span class="y" id="y8"></span></div>
+        </div>
+        <p class="lectura" id="lec8"></p>
+        <pre id="cod8"></pre>
+      </div>
+    </div>
+  </div>
+  <div class="prosa" style="margin-top:var(--space-4)">
+    <div class="nota nota-cuidado">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
+      <div><b>Cuidado</b><div class="cuerpo">Las dos instancias escriben sobre el mismo <code>Y</code>. Eso solo es correcto porque <code>Y</code> es <code>tri</code> y porque las OE son complementarias: nunca hay dos salidas activas a la vez. Si conectaras las dos OE a 1, tendrías una contingencia y el simulador daría x cada vez que D[S] y D[S+4] fueran distintos.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PASO 4 ============ -->
+<section>
+  <div class="paso-cab"><span class="paso-num">4</span><h2>Probar el 8x1 y compilar</h2></div>
+  <div class="prosa"><p>El banco de pruebas del 8x1 es igual que el anterior, con D de 8 bits y S de 3, y ya sin OE. Se recorren los ocho valores de S con D = 11010111 y, tras un <code>$display("Test 2")</code>, otra vez con D = 00110111. Leyendo D de derecha a izquierda (D₀ es el bit menos significativo) se puede predecir cada línea.</p></div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="derecha"><pre id="tb8"></pre></div>
+      <div class="derecha">
+        <div class="pasos" id="pasos8"></div>
+        <div class="fila"><button class="boton boton-primario" id="run8">Ejecutar siguiente</button><button class="boton" id="runall8">Ejecutar todo</button><button class="boton boton-discreto" id="reset8">Reiniciar</button></div>
+        <p class="lectura" id="lectb8"></p>
+        <pre class="consola" id="con8" aria-live="polite"></pre>
+      </div>
+    </div>
+  </div>
+  <div class="prosa" style="margin-top:var(--space-4)">
+    <p>Todo va en un único fichero, <code>Ejercicio_6.v</code>, con los tres módulos. Como en el vídeo, se compila y ejecuta con Icarus Verilog:</p>
+    <pre><span class="prompt" style="color:var(--tinta-suave)">$</span> iverilog Ejercicio_6.v -o ej6
+<span class="prompt" style="color:var(--tinta-suave)">$</span> ./ej6</pre>
+    <p style="margin-top:var(--space-4)"></p>
+    <div class="nota nota-cuidado">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
+      <div><b>Cuidado</b><div class="cuerpo">Un fichero solo puede tener un banco de pruebas activo con ese nombre. En el vídeo, el <code>TextMultiplexor</code> del 4x1 se deja comentado entre <code>/* … */</code> antes de escribir el del 8x1; si no, el compilador se queja de que hay dos módulos con el mismo nombre.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Compruébalo</h2>
+  <div class="reto" id="reto"></div>
+  <p class="pie">Las respuestas se corrigen en la página; nada se envía a ningún sitio.</p>
+</section>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var cls = function(v){ return v==='z'?'z':v==='x'?'x':(v?'uno':'cero'); };
+  function bitsUI(id, arr, pesos, onCambio, sel){
+    // arr: índice 0 = bit más significativo (para mostrar); se guarda como arr[i]
+    var c = $(id); c.innerHTML = '';
+    var n = arr.length;
+    arr.forEach(function(v, i){
+      if (i>0 && (n-i)%4===0) c.insertAdjacentHTML('beforeend','<span class="sep"></span>');
+      var d = document.createElement('div'); d.className = 'bitctl';
+      var b = document.createElement('button'); b.className = 'bit '+cls(v)+(sel===n-1-i?' sel':''); b.textContent = v; b.setAttribute('aria-pressed', !!v);
+      b.setAttribute('aria-label', (pesos?pesos(n-1-i):'bit')+', valor '+v+', pulsa para cambiar');
+      b.addEventListener('click', function(){ onCambio(i); });
+      if (pesos){ var s = document.createElement('span'); s.textContent = pesos(n-1-i); d.appendChild(s); }
+      d.appendChild(b); c.appendChild(d);
+    });
+  }
+  function toDec(arr){ return arr.reduce(function(a,x){ return a*2+x; },0); }
+  function chip(v, x, y, ref){ return '<rect class="chip '+cls(v)+'" x="'+(x-10)+'" y="'+(y-10)+'" width="20" height="20"/><text class="chip-txt '+cls(v)+'" x="'+x+'" y="'+(y+4)+'" text-anchor="middle">'+v+'</text>'+(ref?'<text class="ref" x="'+x+'" y="'+(y-14)+'" text-anchor="middle">'+ref+'</text>':''); }
+  function L(v, pts, extra){ return '<polyline class="linea '+cls(v)+(extra||'')+'" points="'+pts+'"/>'; }
+
+  /* ---------- modelo mux4_1 ---------- */
+  function mux4(D, S, OE){ // D: [D3,D2,D1,D0] en orden de visualización; S: [S1,S0]
+    var d = D.slice().reverse(); // d[i] = D_i
+    var s1 = S[0], s0 = S[1], nS1 = s1?0:1, nS0 = s0?0:1;
+    var t = [ d[0]&nS1&nS0, d[1]&nS1&s0, d[2]&s1&nS0, d[3]&s1&s0 ];
+    var YY = t[0]|t[1]|t[2]|t[3];
+    return { nS1:nS1, nS0:nS0, t:t, YY:YY, Y: OE ? YY : 'z', sel: s1*2+s0 };
+  }
+
+  /* ---------- paso 1 ---------- */
+  var e1 = { D:[1,1,0,1], S:[0,0], OE:1 };
+  function esq4(r){
+    var h = '<rect class="caja-mod" x="120" y="10" width="420" height="300" rx="10"/><text class="ref" x="128" y="24">mux4_1</text>';
+    var D = e1.D, d = D.slice().reverse(), S = e1.S;
+    // S arriba
+    h += '<text class="pin" x="180" y="20" text-anchor="middle">S₁</text>'+chip(S[0],180,36)+'<text class="pin" x="240" y="20" text-anchor="middle">S₀</text>'+chip(S[1],240,36);
+    // not gates
+    h += L(S[0],'180,46 180,70')+'<polygon class="puerta" points="170,70 190,70 180,86"/><circle class="puerta" cx="180" cy="90" r="4"/>'+L(r.nS1,'180,94 180,110');
+    h += L(S[1],'240,46 240,70')+'<polygon class="puerta" points="230,70 250,70 240,86"/><circle class="puerta" cx="240" cy="90" r="4"/>'+L(r.nS0,'240,94 240,110');
+    h += chip(r.nS1,160,122,'nS1')+chip(r.nS0,262,122,'nS0');
+    // buses verticales: S1 en x=200, nS1 x=180, S0 x=260 (tomado antes del not), nS0 x=240
+    h += L(S[0],'200,52 200,280')+L(S[0],'180,52 200,52')+'<circle class="nodo" cx="180" cy="52" r="3"/>';
+    h += L(S[1],'260,52 260,280')+L(S[1],'240,52 260,52')+'<circle class="nodo" cx="240" cy="52" r="3"/>';
+    h += L(r.nS1,'180,110 180,280')+L(r.nS0,'240,110 240,280');
+    // ANDs: filas y=130,175,220,265 ; entradas D_i, y dos de las líneas de selección
+    var selx = [[180,240],[180,260],[200,240],[200,260]]; // (S1 o nS1, S0 o nS0) por término
+    var selv = [[r.nS1,r.nS0],[r.nS1,S[1]],[S[0],r.nS0],[S[0],S[1]]];
+    var nombres = ['D0nS1nS0','D1nS1S0','D2S1nS0','D3S1S0'];
+    for (var i=0;i<4;i++){
+      var y = 130 + i*45;
+      h += '<text class="pin" x="14" y="'+(y+5)+'">D'+i+'</text>'+chip(d[i],52,y)+L(d[i],'62,'+y+' 300,'+y);
+      // conexiones desde los buses de selección
+      h += L(selv[i][0], selx[i][0]+','+(y+8)+' 300,'+(y+8))+'<circle class="nodo" cx="'+selx[i][0]+'" cy="'+(y+8)+'" r="3"/>';
+      h += L(selv[i][1], selx[i][1]+','+(y+16)+' 300,'+(y+16))+'<circle class="nodo" cx="'+selx[i][1]+'" cy="'+(y+16)+'" r="3"/>';
+      h += '<path class="puerta'+(r.t[i]?' activa':'')+'" d="M300 '+(y-8)+' h14 a16 16 0 0 1 0 32 h-14 z"/>';
+      h += L(r.t[i],'330,'+(y+8)+' 380,'+(y+8))+'<text class="ref" x="355" y="'+(y+2)+'" text-anchor="middle">'+nombres[i]+'</text>';
+    }
+    // OR (y centrado 197)
+    h += '<path class="puerta'+(r.YY?' activa':'')+'" d="M380 116 q14 81 0 162 q40 -10 56 -81 q-16 -71 -56 -81 z"/>';
+    for (var k=0;k<4;k++){ var yk = 138 + k*45; h += L(r.t[k],'380,'+yk+' 388,'+yk); }
+    h += L(r.YY,'436,197 460,197')+chip(r.YY,448,180,'YY');
+    // bufif1
+    h += '<polygon class="puerta'+(e1.OE?' activa':'')+'" points="460,182 460,212 488,197"/>';
+    h += '<text class="pin" x="474" y="150" text-anchor="middle">OE</text>'+chip(e1.OE,474,166)+L(e1.OE,'474,176 474,184');
+    h += L(r.Y,'488,197 520,197')+chip(r.Y,532,197)+'<text class="pin" x="548" y="202">Y</text>';
+    $('esq4').innerHTML = h;
+  }
+  function render1(){
+    var r = mux4(e1.D, e1.S, e1.OE);
+    esq4(r);
+    bitsUI('d4', e1.D, function(i){ return 'D'+i; }, function(i){ e1.D[i] = e1.D[i]?0:1; render1(); }, e1.OE ? r.sel : -1);
+    bitsUI('s4', e1.S, function(i){ return 'S'+i; }, function(i){ e1.S[i] = e1.S[i]?0:1; render1(); });
+    bitsUI('oe4', [e1.OE], null, function(){ e1.OE = e1.OE?0:1; render1(); });
+    var Y = $('y4'); Y.textContent = r.Y; Y.className = 'y '+cls(r.Y);
+    $('lec4').innerHTML = e1.OE ? 'OE = 1: el búfer deja pasar. S = '+e1.S.join('')+' = '+r.sel+' selecciona <strong>D'+r.sel+' = '+r.Y+'</strong>; solo la AND de ese término está activa.' : 'OE = 0: el búfer corta. La OR sigue calculando YY = '+r.YY+', pero <strong>Y = z</strong>, dé lo que dé S.';
+    $('tv4').querySelectorAll('tbody tr').forEach(function(tr){ tr.className = (+tr.dataset.oe===e1.OE && (!e1.OE || +tr.dataset.s===r.sel)) ? 'activa' : ''; });
+    $('cod4').innerHTML =
+      '<span class="kw">module</span> <span class="id">mux4_1</span>(<span class="kw">output tri</span> Y, <span class="kw">input wire</span> [3:0] D, <span class="kw">input wire</span> [1:0] S, <span class="kw">input wire</span> OE);\n'+
+      '    <span class="kw">wire</span> nS0, nS1;\n    <span class="kw">wire</span> D0nS1nS0, D1nS1S0, D2S1nS0, D3S1S0;\n    <span class="kw">wire</span> YY;\n'+
+      '    <span class="kw">not</span> (nS1, S[1]);\n    <span class="kw">not</span> (nS0, S[0]);\n'+
+      '    <span class="kw">and</span> (D0nS1nS0, D[0], nS1,  nS0 );   <span class="cm">// = '+r.t[0]+'</span>\n'+
+      '    <span class="kw">and</span> (D1nS1S0 , D[1], nS1,  S[0]);   <span class="cm">// = '+r.t[1]+'</span>\n'+
+      '    <span class="kw">and</span> (D2S1nS0 , D[2], S[1], nS0 );   <span class="cm">// = '+r.t[2]+'</span>\n'+
+      '    <span class="kw">and</span> (D3S1S0  , D[3], S[1], S[0]);   <span class="cm">// = '+r.t[3]+'</span>\n'+
+      '    <span class="kw">or</span>  (YY, D0nS1nS0, D1nS1S0, D2S1nS0, D3S1S0);   <span class="cm">// = '+r.YY+'</span>\n'+
+      '    <span class="hl"><span class="kw">bufif1</span> (Y, YY, OE);</span>   <span class="cm">// Y = '+r.Y+'</span>\n'+
+      '<span class="kw">endmodule</span>';
+  }
+  render1();
+
+  /* ---------- banco de pruebas genérico ---------- */
+  function Banco(cfg){
+    var self = this; this.cfg = cfg; this.reset();
+    $(cfg.btnRun).addEventListener('click', function(){ self.paso(); });
+    $(cfg.btnAll).addEventListener('click', function(){ while (self.i < self.cfg.pasos.length) self.paso(false); self.render(); });
+    $(cfg.btnReset).addEventListener('click', function(){ self.reset(); });
+  }
+  Banco.prototype.reset = function(){ this.i = 0; this.t = 0; this.regs = JSON.parse(JSON.stringify(this.cfg.inicial)); this.lineas = []; this.ultimo = ''; this.render(); };
+  Banco.prototype.paso = function(doRender){
+    if (this.i >= this.cfg.pasos.length) return;
+    var p = this.cfg.pasos[this.i]; this.t += p.d||0;
+    var self = this;
+    if (p.display){ // $display sale antes que la línea de $monitor del mismo instante
+      var idx = this.lineas.findIndex(function(l){ return l.mon && l.tt===self.t; });
+      var d = { t:p.display, cl:'aviso' };
+      if (idx >= 0) this.lineas.splice(idx, 0, d); else this.lineas.push(d);
+    }
+    if (p.set) Object.assign(this.regs, p.set);
+    var out = this.cfg.evaluar(this.regs);
+    var linea = this.cfg.monitor(this.t, this.regs, out);
+    // $monitor imprime una vez por instante, con los valores finales: sustituye la línea del mismo t
+    var prev = this.lineas.findIndex(function(l){ return l.mon && l.tt===self.t; });
+    if (prev >= 0) this.lineas.splice(prev, 1);
+    if (linea !== this.ultimo || prev >= 0){ this.lineas.push({ t:linea, mon:true, tt:this.t }); this.ultimo = linea; }
+    this.ultimaExpl = this.cfg.explicar(this.regs, out);
+    this.i++;
+    if (doRender !== false) this.render();
+  };
+  Banco.prototype.render = function(){
+    var c = this.cfg, self = this;
+    var h = c.cabecera.map(function(l){ return '<span class="fila">'+l+'</span>'; }).join('');
+    c.pasos.forEach(function(p, i){ if (p.src) h += '<span class="fila'+(i===self.i?' actual':'')+'"'+(i<self.i?' style="opacity:.6"':'')+'>'+p.src+'</span>'; });
+    h += c.pie.map(function(l){ return '<span class="fila">'+l+'</span>'; }).join('');
+    $(c.code).innerHTML = h;
+    var P = $(c.pasosEl); P.innerHTML = '';
+    c.pasos.forEach(function(p, i){ P.insertAdjacentHTML('beforeend','<span class="paso '+(i<self.i?'hecho':i===self.i?'actual':'')+'"><span class="n">'+(i<self.i?'✓':(i+1))+'</span>'+p.tag+'</span>'); });
+    $(c.btnRun).disabled = this.i >= c.pasos.length;
+    $(c.lect).innerHTML = this.i===0 ? 'Pulsa «Ejecutar siguiente» para ir instrucción a instrucción, o «Ejecutar todo».' : (this.ultimaExpl || '');
+    $(c.con).innerHTML = this.lineas.length ? this.lineas.map(function(l,i){ return '<span class="'+(i===self.lineas.length-1?'nuevo ':'')+(l.cl||'')+'">'+l.t.replace(/Y=z/g,'Y=<span class="z">z</span>')+'</span>'; }).join('\n') : '<span style="opacity:.6">// salida de $monitor</span>';
+  };
+
+  /* banco 4x1: pasos equivalentes al while */
+  var pasos4 = [
+    { src:'            D=\'b1101;', tag:'D', set:{D:[1,1,0,1]} , d:0 },
+    { src:'            S=0;', tag:'S=0', set:{S:[0,0]} },
+    { src:'            OE=1;', tag:'OE=1', set:{OE:1} },
+    { src:'            <span class="kw">while</span> (S!=\'b11) #5 S=S+1;', tag:'t=5', set:{S:[0,1]}, d:5 },
+    { tag:'t=10', set:{S:[1,0]}, d:5 },
+    { tag:'t=15', set:{S:[1,1]}, d:5 },
+    { src:'            #5 OE=0;', tag:'OE=0', set:{OE:0}, d:5 },
+    { src:'            S=0;', tag:'S=0', set:{S:[0,0]} },
+    { src:'            <span class="kw">while</span> (S!=\'b11) #5 S=S+1;', tag:'t=25', set:{S:[0,1]}, d:5 },
+    { tag:'t=30', set:{S:[1,0]}, d:5 },
+    { tag:'t=35', set:{S:[1,1]}, d:5 }
+  ];
+  new Banco({
+    code:'tb4', pasosEl:'pasos4', btnRun:'run4', btnAll:'runall4', btnReset:'reset4', lect:'lectb4', con:'con4',
+    inicial:{ D:['x','x','x','x'], S:['x','x'], OE:'x' }, pasos:pasos4,
+    cabecera:['<span class="kw">module</span> <span class="id">TextMultiplexor</span>;','    <span class="kw">reg</span> [3:0] D;','    <span class="kw">reg</span> [1:0] S;','    <span class="kw">reg</span> OE;','    <span class="kw">tri</span> Y;','    <span class="id">mux4_1</span> m(Y,D,S,OE);','    <span class="kw">initial</span>','        <span class="kw">begin</span>','            <span class="sys">$monitor</span>(<span class="sys">$time</span>," D=%b S=%b OE=%b Y=%b", D, S, OE, Y);'],
+    pie:['        <span class="kw">end</span>','<span class="kw">endmodule</span>'],
+    evaluar:function(r){ if (r.OE==='x'||r.S[0]==='x') return { Y:'x' }; return mux4(r.D, r.S, r.OE); },
+    monitor:function(t, r, o){ return String(t).padStart(3,' ')+' D='+r.D.join('')+' S='+r.S.join('')+' OE='+r.OE+' Y='+o.Y; },
+    explicar:function(r, o){ if (r.OE===0) return 'OE = 0: la salida está en <strong>z</strong> sea cual sea S. El multiplexor sigue calculando por dentro, pero el búfer no lo saca.'; if (o.Y==='x') return 'Todavía hay registros sin inicializar.'; return 'S = '+r.S.join('')+' selecciona D'+o.sel+'. Leyendo D = '+r.D.join('')+' de derecha a izquierda, D'+o.sel+' = <strong>'+o.Y+'</strong>.'; }
+  });
+
+  /* ---------- paso 3: mux8 ---------- */
+  var e3 = { D:[1,1,0,1,0,1,1,1], S:[0,0,0] };
+  function mux8(D, S){ var d = D.slice().reverse(); var s2 = S[0], nS2 = s2?0:1; var m1 = mux4(D.slice(4), S.slice(1), nS2), m2 = mux4(D.slice(0,4), S.slice(1), s2); var sel = s2*4+S[1]*2+S[2]; return { m1:m1, m2:m2, nS2:nS2, sel:sel, Y: s2 ? m2.Y : m1.Y }; }
+  function esq8(r){
+    var D = e3.D, d = D.slice().reverse(), S = e3.S, s2 = S[0];
+    var h = '<rect class="caja-mod" x="100" y="10" width="420" height="330" rx="10"/><text class="ref" x="108" y="24">mux8_1</text>';
+    // m1 arriba (D0..D3), m2 abajo (D4..D7)
+    var caja = function(x,y,act,nom){ return '<rect class="caja '+(act?'activa':'apagada')+'" x="'+x+'" y="'+y+'" width="130" height="100"/><text class="rot" x="'+(x+65)+'" y="'+(y+40)+'" text-anchor="middle">MUX</text><text class="rot" x="'+(x+65)+'" y="'+(y+62)+'" text-anchor="middle">4x1</text><text class="ref" x="'+(x+6)+'" y="'+(y+96)+'">'+nom+'</text>'; };
+    h += caja(180,40,!s2,'m1') + caja(320,180,s2,'m2');
+    for (var i=0;i<4;i++){ var y = 52+i*22; h += '<text class="pin" x="14" y="'+(y+5)+'">D'+i+'</text>'+chip(d[i],50,y)+L(d[i],'60,'+y+' 180,'+y)+'<text class="ref" x="186" y="'+(y+4)+'">D'+i+'</text>'; }
+    for (var j=4;j<8;j++){ var y2 = 192+(j-4)*22; h += '<text class="pin" x="14" y="'+(y2+5)+'">D'+j+'</text>'+chip(d[j],50,y2)+L(d[j],'60,'+y2+' 320,'+y2)+'<text class="ref" x="326" y="'+(y2+4)+'">D'+(j-4)+'</text>'; }
+    // salidas Y unidas
+    h += L(r.m1.Y,'310,90 480,90')+'<text class="ref" x="300" y="84" text-anchor="end">Y</text>';
+    h += L(r.m2.Y,'450,230 480,230')+'<text class="ref" x="440" y="224" text-anchor="end">Y</text>';
+    h += L(r.Y,'480,230 480,90',' gruesa')+L(r.Y,'480,90 520,90',' gruesa')+'<circle class="nodo" cx="480" cy="90" r="3.5"/>'+chip(r.Y,534,90)+'<text class="pin" x="548" y="95">Y</text>';
+    // selección abajo: S2 x=215, S1 x=250, S0 x=285
+    h += '<text class="pin" x="215" y="356" text-anchor="middle">S₂</text><text class="pin" x="250" y="356" text-anchor="middle">S₁</text><text class="pin" x="285" y="356" text-anchor="middle">S₀</text>';
+    h += chip(S[0],215,332)+chip(S[1],250,332)+chip(S[2],285,332);
+    // S1,S0 a m1 (OE en x=215, S1 x=250, S0 x=285 bajo la caja m1 y=140)
+    h += L(S[1],'250,322 250,140')+L(S[2],'285,322 285,140')+'<text class="ref" x="256" y="152">S1</text><text class="ref" x="291" y="152">S0</text><text class="ref" x="200" y="152">OE</text>';
+    // S1,S0 a m2 (OE x=355, S1 x=390, S0 x=425 bajo m2 y=280)
+    h += L(S[1],'250,300 390,300 390,280')+'<circle class="nodo" cx="250" cy="300" r="3"/>'+L(S[2],'285,310 425,310 425,280')+'<circle class="nodo" cx="285" cy="310" r="3"/>';
+    h += '<text class="ref" x="361" y="292">OE</text><text class="ref" x="396" y="292">S1</text><text class="ref" x="431" y="292">S0</text>';
+    // S2: not → OE de m1; directo → OE de m2
+    h += L(s2,'215,322 215,250')+'<polygon class="puerta" points="205,250 225,250 215,234"/><circle class="puerta" cx="215" cy="230" r="4"/>'+L(r.nS2,'215,226 215,140')+chip(r.nS2,238,166,'nS2');
+    h += L(s2,'215,290 355,290 355,280')+'<circle class="nodo" cx="215" cy="290" r="3"/>';
+    $('esq8').innerHTML = h;
+  }
+  function render3(){
+    var r = mux8(e3.D, e3.S);
+    esq8(r);
+    bitsUI('d8', e3.D, function(i){ return 'D'+i; }, function(i){ e3.D[i] = e3.D[i]?0:1; render3(); }, r.sel);
+    bitsUI('s8', e3.S, function(i){ return 'S'+i; }, function(i){ e3.S[i] = e3.S[i]?0:1; render3(); });
+    var Y = $('y8'); Y.textContent = r.Y; Y.className = 'y '+cls(r.Y);
+    $('lec8').innerHTML = 'S = '+e3.S.join('')+' = '+r.sel+'. S₂ = '+e3.S[0]+' habilita <strong>'+(e3.S[0]?'m2 (D₄…D₇)':'m1 (D₀…D₃)')+'</strong>; el otro queda en z. S₁S₀ = '+e3.S[1]+e3.S[2]+' elige su entrada '+(r.sel%4)+', es decir <strong>D'+r.sel+' = '+r.Y+'</strong>.';
+    $('cod8').innerHTML = '<span class="kw">module</span> <span class="id">mux8_1</span>(<span class="kw">output tri</span> Y, <span class="kw">input wire</span> [7:0] D, <span class="kw">input wire</span> [2:0] S);\n    <span class="kw">wire</span> nS2;\n    <span class="kw">not</span> (nS2, S[2]);                        <span class="cm">// nS2 = '+r.nS2+'</span>\n    <span class="id">mux4_1</span> m1(Y, D[3:0], S[1:0], <span class="hl">nS2</span>);    <span class="cm">// Y = '+r.m1.Y+'</span>\n    <span class="id">mux4_1</span> m2(Y, D[7:4], S[1:0], <span class="hl">S[2]</span>);   <span class="cm">// Y = '+r.m2.Y+'</span>\n<span class="kw">endmodule</span>';
+  }
+  render3();
+
+  /* banco 8x1 */
+  function sBits(n){ return [(n>>2)&1,(n>>1)&1,n&1]; }
+  var pasos8 = [ { src:'            D=\'b11010111;', tag:'D', set:{D:[1,1,0,1,0,1,1,1]} }, { src:'            S=0;', tag:'S=0', set:{S:[0,0,0]} }, { src:'            <span class="kw">while</span> (S!=\'b111) #5 S=S+1;', tag:'t=5', set:{S:sBits(1)}, d:5 } ];
+  for (var k=2;k<8;k++) pasos8.push({ tag:'t='+(k*5), set:{S:sBits(k)}, d:5 });
+  pasos8.push({ src:'            #5 D=\'b00110111;', tag:'D', set:{D:[0,0,1,1,0,1,1,1]}, d:5 });
+  pasos8.push({ src:'            S=0;', tag:'S=0', set:{S:[0,0,0]} });
+  pasos8.push({ src:'            <span class="sys">$display</span>("Test 2");', tag:'display', display:'Test 2' });
+  pasos8.push({ src:'            <span class="kw">while</span> (S!=\'b111) #5 S=S+1;', tag:'t=45', set:{S:sBits(1)}, d:5 });
+  for (var k2=2;k2<8;k2++) pasos8.push({ tag:'t='+(40+k2*5), set:{S:sBits(k2)}, d:5 });
+  new Banco({
+    code:'tb8', pasosEl:'pasos8', btnRun:'run8', btnAll:'runall8', btnReset:'reset8', lect:'lectb8', con:'con8',
+    inicial:{ D:['x','x','x','x','x','x','x','x'], S:['x','x','x'] }, pasos:pasos8,
+    cabecera:['<span class="kw">module</span> <span class="id">TextMultiplexor</span>;','    <span class="kw">reg</span> [7:0] D;','    <span class="kw">reg</span> [2:0] S;','    <span class="kw">tri</span> Y;','    <span class="id">mux8_1</span> m(Y,D,S);','    <span class="kw">initial</span>','        <span class="kw">begin</span>','            <span class="sys">$monitor</span>(<span class="sys">$time</span>," D=%b S=%b Y=%b", D, S, Y);'],
+    pie:['        <span class="kw">end</span>','<span class="kw">endmodule</span>'],
+    evaluar:function(r){ if (r.S[0]==='x'||r.D[0]==='x') return { Y:'x', sel:'?' }; return mux8(r.D, r.S); },
+    monitor:function(t, r, o){ return String(t).padStart(3,' ')+' D='+r.D.join('')+' S='+r.S.join('')+' Y='+o.Y; },
+    explicar:function(r, o){ if (o.Y==='x') return 'Todavía hay registros sin inicializar.'; return 'S = '+r.S.join('')+' = '+o.sel+': habla '+(r.S[0]?'m2':'m1')+' y elige <strong>D'+o.sel+' = '+o.Y+'</strong> (D = '+r.D.join('')+', contado desde la derecha).'; }
+  });
+
+  /* Reto */
+  var PREG = [
+    { q:'En el mux4_1, con OE = 0 y S = 10, ¿qué vale Y?', ops:['D₂','0','z'], ok:2, exp:'Con OE = 0 el bufif1 corta: Y = z independientemente de S y de D.' },
+    { q:'¿Por qué el puerto Y del mux4_1 se declara <code>output tri</code> y no <code>output wire</code>?', ops:['Porque puede valer z y, en el 8x1, dos instancias escriben sobre él','Porque es de 4 bits','Porque lo exige bufif1'], ok:0, exp:'tri es una red que admite varias señales encima y resuelve la contingencia; en el 8x1 las dos Y se unen en un mismo cable.' },
+    { q:'En el mux8_1, S = 101. ¿Qué entrada sale por Y?', ops:['D₁','D₅','D₄'], ok:1, exp:'S₂ = 1 habilita m2 (D₄…D₇); S₁S₀ = 01 elige su entrada 1, que es D₅.' },
+    { q:'Si por error las dos OE del 8x1 se conectaran a S₂ (sin el NOT), ¿qué pasaría con S₂ = 1?', ops:['Funcionaría igual','Y sería siempre z','Las dos salidas estarían activas: contingencia, x cuando discrepen'], ok:2, exp:'Dos búferes habilitados sobre el mismo tri: si D[S] y D[S+4] son distintos, Y = x.' }
+  ];
+  var R = $('reto');
+  PREG.forEach(function(p, i){
+    var div = document.createElement('div'); div.className = 'pregunta';
+    div.innerHTML = '<div><span class="etiqueta etiqueta-neutra">Pregunta '+(i+1)+'</span></div><div>'+p.q+'</div><div class="opciones" role="group" aria-label="Opciones de la pregunta '+(i+1)+'">'+p.ops.map(function(o,j){ return '<button class="boton" data-j="'+j+'" aria-pressed="false">'+o+'</button>'; }).join('')+'</div><div class="feedback" aria-live="polite"></div>';
+    R.appendChild(div);
+    div.querySelectorAll('.opciones .boton').forEach(function(b){
+      b.addEventListener('click', function(){
+        div.querySelectorAll('.opciones .boton').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+        b.setAttribute('aria-pressed','true');
+        var ok = +b.dataset.j === p.ok;
+        div.querySelector('.feedback').innerHTML = '<div class="nota '+(ok?'nota-correcto':'nota-incorrecto')+'" role="status">'
+          + (ok ? '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l4 4 10-9"/></svg>' : '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15"/></svg>')
+          + '<div><b>'+(ok?'Correcto':'Incorrecto')+'</b><div class="cuerpo">'+p.exp+'</div></div></div>';
+      });
+    });
+  });
+})();
+</script>
+<footer>Computadores I · Grado en Ingeniería Informática · Daniel Hernández de la Iglesia (PB3)<br>Material de prácticas basado en <a href="http://avellano.usal.es/~compi/">la web de la asignatura</a>.</footer>
+</body>
+</html>

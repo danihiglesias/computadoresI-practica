@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transceptor de bus</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Lato:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: columna de lectura (68 ch) con simulador y banco de pruebas a ancho completo; tema único claro del sistema Computadores */
+:root {
+  --papel:#f8f4ec; --papel-elevado:#ffffff; --papel-hundido:#efe8db; --piedra:#e3d9c8; --piedra-fuerte:#857869;
+  --tinta:#2a2420; --tinta-suave:#6b5f55;
+  --vitor:#a8192b; --vitor-suave:#f7dddc; --sobre-vitor:#ffffff;
+  --dorado:#d9a441; --dorado-texto:#8a5a0a; --dorado-suave:#fbeed2;
+  --centenario:#385e9d; --centenario-suave:#dde6f4; --sobre-centenario:#ffffff;
+  --correcto:#1f6f43; --correcto-suave:#dcefe2;
+  --incorrecto:var(--vitor); --incorrecto-suave:var(--vitor-suave);
+  --foco:var(--centenario); --diag-bus:var(--tinta-suave);
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
+  --radius-sm:6px; --radius-md:12px; --radius-lg:20px; --radius-pill:999px;
+  --sombra-tarjeta:0 1px 2px rgba(42,36,32,.06), 0 4px 12px rgba(42,36,32,.06);
+  --font-display:"Bricolage Grotesque","Lato",system-ui,sans-serif;
+  --font-sans:"Lato",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme: light;
+}
+* { box-sizing:border-box; }
+body { background:var(--papel); color:var(--tinta); font-family:var(--font-sans); font-size:17px; line-height:27px; margin:0;
+  padding-block:var(--space-6) var(--space-8); padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+.wrap { max-width:960px; margin:0 auto; display:flex; flex-direction:column; gap:var(--space-7); }
+.prosa { max-width:68ch; }
+.prosa p { margin:0 0 var(--space-4); }
+h1,h2,h3 { font-family:var(--font-display); text-wrap:balance; margin:0; }
+h1 { font-size:40px; line-height:44px; font-weight:700; letter-spacing:-.02em; margin:var(--space-2) 0 var(--space-4); }
+h2 { font-size:28px; line-height:34px; font-weight:600; letter-spacing:-.01em; margin-bottom:var(--space-4); display:inline-block; box-shadow:inset 0 -4px 0 var(--dorado); }
+h3 { font-size:20px; line-height:26px; font-weight:600; }
+.etiqueta { display:inline-flex; align-items:center; gap:var(--space-1); font-size:12px; line-height:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px var(--space-2); border-radius:var(--radius-pill); background:var(--vitor-suave); color:var(--vitor); }
+.etiqueta-neutra { background:var(--papel-hundido); color:var(--tinta-suave); }
+.etiqueta-centenario { background:var(--centenario-suave); color:var(--centenario); }
+.cabecera { display:flex; align-items:center; gap:var(--space-3); }
+.cabecera img { width:40px; height:40px; }
+code { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:15px; background:var(--papel-hundido); padding:1px 6px; border-radius:var(--radius-sm); }
+pre { font-family:var(--font-mono); font-size:15px; line-height:24px; background:var(--papel-hundido); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); margin:0; overflow-x:auto; }
+pre .kw { color:var(--vitor); font-weight:600; } pre .id { color:var(--centenario); } pre .cm { color:var(--tinta-suave); }
+pre .hl { background:var(--dorado); color:var(--tinta); border-radius:3px; padding:0 2px; }
+pre .off { opacity:.4; text-decoration:line-through; }
+pre.consola { background:var(--tinta); color:var(--papel); min-height:60px; }
+pre.consola .nuevo { background:rgba(217,164,65,.28); }
+pre.consola .x { color:var(--dorado); font-weight:600; }
+
+.nota { display:grid; grid-template-columns:20px 1fr; gap:var(--space-3); padding:var(--space-4); border-radius:var(--radius-md); background:var(--papel-elevado); border:1px solid var(--piedra); font-size:15px; line-height:22px; max-width:68ch; }
+.nota svg { width:20px; height:20px; margin-top:1px; }
+.nota b { display:block; margin-bottom:2px; }
+.nota-idea { background:var(--centenario-suave); border-color:var(--centenario-suave); color:var(--centenario); }
+.nota-cuidado { background:var(--dorado-suave); border-color:var(--dorado-suave); color:var(--dorado-texto); }
+.nota-correcto { background:var(--correcto-suave); border-color:var(--correcto-suave); color:var(--correcto); }
+.nota-incorrecto { background:var(--incorrecto-suave); border-color:var(--incorrecto-suave); color:var(--incorrecto); }
+.nota .cuerpo { color:var(--tinta); }
+
+.panel { background:var(--papel-elevado); border-radius:var(--radius-lg); box-shadow:var(--sombra-tarjeta); padding:var(--space-5); display:flex; flex-direction:column; gap:var(--space-5); }
+.grid2 { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:var(--space-5); align-items:start; }
+@media (max-width:720px) { .grid2 { grid-template-columns:1fr; } }
+.escena { min-width:0; } .escena svg { width:100%; height:auto; display:block; }
+.derecha { display:flex; flex-direction:column; gap:var(--space-4); min-width:0; }
+
+/* esquema */
+.linea { stroke:var(--diag-bus); stroke-width:3; fill:none; stroke-linecap:round; stroke-linejoin:round; transition:stroke 250ms ease-out; }
+.linea.uno { stroke:var(--vitor); } .linea.cero { stroke:var(--tinta); } .linea.z { stroke:var(--piedra); stroke-dasharray:6 8; } .linea.x { stroke:var(--dorado-texto); stroke-dasharray:3 5; }
+.linea.fina { stroke-width:2; }
+.puerta { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2.5; stroke-linejoin:round; }
+.burbuja { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2.5; }
+.nodo { fill:var(--tinta); }
+.pin { font-family:var(--font-display); font-size:17px; font-weight:600; fill:var(--tinta); }
+.ref { font-family:var(--font-mono); font-size:12px; fill:var(--tinta-suave); }
+.chip { rx:5; }
+.chip.uno { fill:var(--vitor); } .chip.cero { fill:var(--papel-hundido); stroke:var(--piedra); stroke-width:1.5; } .chip.z { fill:var(--papel-elevado); stroke:var(--piedra-fuerte); stroke-width:1.5; stroke-dasharray:4 4; } .chip.x { fill:var(--dorado); }
+.chip-txt { font-family:var(--font-mono); font-size:15px; font-weight:600; }
+.chip-txt.uno { fill:var(--sobre-vitor); } .chip-txt.cero { fill:var(--tinta); } .chip-txt.z { fill:var(--tinta-suave); } .chip-txt.x { fill:var(--tinta); }
+.caja-mod { fill:none; stroke:var(--piedra-fuerte); stroke-width:1.5; stroke-dasharray:6 5; rx:12; }
+.tb { fill:var(--papel-hundido); stroke:var(--piedra); stroke-width:1.5; rx:6; }
+.tb-txt { font-family:var(--font-mono); font-size:13px; font-weight:600; fill:var(--tinta); }
+
+/* controles */
+.ctl-grid { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2); }
+@media (max-width:420px) { .ctl-grid { grid-template-columns:1fr; } }
+.fuente { display:grid; grid-template-columns:auto 1fr; gap:var(--space-2); align-items:center; padding:var(--space-2) var(--space-3); border:1px solid var(--piedra); border-radius:var(--radius-md); font-size:15px; }
+.fuente .nombre { font-family:var(--font-mono); font-weight:600; font-size:15px; }
+.fuente .nombre small { display:block; font:400 11px/14px var(--font-sans); color:var(--tinta-suave); letter-spacing:.04em; }
+.seg { display:inline-flex; border:1px solid var(--piedra-fuerte); border-radius:var(--radius-sm); overflow:hidden; justify-self:end; }
+.seg button { font:600 16px/22px var(--font-mono); width:38px; height:38px; border:0; border-left:1px solid var(--piedra); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.seg button:first-child { border-left:0; }
+.seg button[aria-pressed="true"].v0 { background:var(--tinta); color:var(--papel); }
+.seg button[aria-pressed="true"].v1 { background:var(--vitor); color:var(--sobre-vitor); }
+.seg button[aria-pressed="true"].vz { background:var(--papel-hundido); color:var(--tinta-suave); text-decoration:underline dashed; }
+.seg button[aria-pressed="true"].vx { background:var(--dorado); color:var(--tinta); }
+.seg button:focus-visible, .boton:focus-visible, .pestana:focus-visible { outline:2px solid var(--foco); outline-offset:2px; }
+.boton { font:700 15px/20px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.boton-primario { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.boton-discreto { background:transparent; border-color:transparent; color:var(--vitor); }
+.boton:disabled { opacity:.45; cursor:not-allowed; }
+.fila { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; }
+.pestanas { display:flex; flex-wrap:wrap; gap:var(--space-2); }
+.pestana { font:700 15px/20px var(--font-sans); padding:var(--space-2) var(--space-3); border-radius:var(--radius-pill); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.pestana[aria-selected="true"] { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.lectura { font-size:15px; line-height:22px; color:var(--tinta-suave); margin:0; }
+.lectura strong { color:var(--tinta); }
+.modo { display:inline-flex; align-items:center; gap:var(--space-2); font-size:15px; font-weight:700; padding:var(--space-2) var(--space-3); border-radius:var(--radius-pill); }
+.modo.ab { background:var(--vitor-suave); color:var(--vitor); } .modo.ba { background:var(--centenario-suave); color:var(--centenario); } .modo.sep { background:var(--papel-hundido); color:var(--tinta-suave); }
+
+table.tv { border-collapse:collapse; font-family:var(--font-mono); font-size:16px; }
+.tv th { font-family:var(--font-display); font-weight:600; padding:var(--space-2) var(--space-3); border-bottom:2px solid var(--tinta); text-align:center; }
+.tv th.neg { text-decoration:overline; }
+.tv td { padding:var(--space-2) var(--space-3); text-align:center; border-bottom:1px solid var(--piedra); font-family:var(--font-sans); }
+.tv td:first-child, .tv td:nth-child(2) { font-family:var(--font-mono); }
+.tv th:nth-child(3), .tv td:nth-child(3) { border-left:2px solid var(--tinta); text-align:left; }
+.tv tr.activa td { background:var(--dorado); font-weight:600; }
+
+/* banco de pruebas */
+.pasos { display:flex; flex-wrap:wrap; gap:var(--space-1); align-items:center; font-size:14px; }
+.paso { display:inline-flex; align-items:center; gap:6px; padding:3px 10px 3px 3px; border-radius:var(--radius-pill); color:var(--tinta-suave); }
+.paso .n { width:22px; height:22px; border-radius:50%; display:inline-grid; place-items:center; font:600 12px var(--font-mono); background:var(--papel-hundido); color:var(--tinta-suave); border:1px solid var(--piedra); }
+.paso.hecho .n { background:var(--papel-elevado); color:var(--correcto); border-color:var(--correcto); }
+.paso.actual { background:var(--dorado); color:var(--tinta); font-weight:700; }
+.paso.actual .n { background:var(--tinta); color:var(--papel); border-color:var(--tinta); }
+.prediccion { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--piedra); border-radius:var(--radius-md); }
+.prediccion .fila-p { display:flex; flex-wrap:wrap; gap:var(--space-4); align-items:center; }
+.prediccion .fila-p > div { display:flex; align-items:center; gap:var(--space-2); font-family:var(--font-mono); font-weight:600; }
+.pie { font-size:13px; line-height:18px; color:var(--tinta-suave); }
+.resumen { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--space-3); }
+.tarjeta { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); background:var(--papel-elevado); font-size:15px; line-height:22px; }
+.tarjeta code { display:inline-block; margin-bottom:var(--space-2); font-weight:600; color:var(--vitor); }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+.nav-leccion{max-width:960px;margin:0 auto var(--space-5);display:flex;justify-content:space-between;gap:var(--space-3);font-size:14px;flex-wrap:wrap}.nav-leccion a{color:var(--centenario)}.nav-leccion span{color:var(--tinta-suave)}
+footer{max-width:960px;margin:48px auto 0;font-size:13px;line-height:18px;color:var(--tinta-suave)}footer a{color:var(--vitor)}
+</style>
+</head>
+<body>
+<nav class="nav-leccion" aria-label="Navegación de la lección"><a href="index.html">← Índice de la sesión 5</a><span>4 / 7</span><span><a href="asignacion-cables.html">← Asignación de señales a cables</a> · <a href="parar-simulacion.html">Parar la simulación →</a></span></nav>
+<div class="wrap">
+<header class="prosa">
+  <div class="cabecera">
+    <img alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%236b5f55'%3E%3Crect x='18' y='2' width='4' height='8' rx='1'/%3E%3Crect x='30' y='2' width='4' height='8' rx='1'/%3E%3Crect x='42' y='2' width='4' height='8' rx='1'/%3E%3Crect x='18' y='54' width='4' height='8' rx='1'/%3E%3Crect x='30' y='54' width='4' height='8' rx='1'/%3E%3Crect x='42' y='54' width='4' height='8' rx='1'/%3E%3Crect x='2' y='18' width='8' height='4' rx='1'/%3E%3Crect x='2' y='30' width='8' height='4' rx='1'/%3E%3Crect x='2' y='42' width='8' height='4' rx='1'/%3E%3Crect x='54' y='18' width='8' height='4' rx='1'/%3E%3Crect x='54' y='30' width='8' height='4' rx='1'/%3E%3Crect x='54' y='42' width='8' height='4' rx='1'/%3E%3C/g%3E%3Crect x='8' y='8' width='48' height='48' rx='12' fill='%23a8192b'/%3E%3Crect x='16' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='25' y='24' width='7' height='16' rx='2' fill='%23f7dddc' fill-opacity='.35'/%3E%3Crect x='34' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='43' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3C/svg%3E">
+    <span class="etiqueta">Computadores · Lógica digital · Ejercicio</span>
+  </div>
+  <h1>Transceptor de bus</h1>
+  <p>Vamos a juntar lo visto en los tres puntos anteriores (búferes triestado, contingencia y <code>assign</code>) en un circuito real: un <strong>transceptor</strong> (<em>transceiver</em>) de un bit. Conecta dos líneas, A y B, y deja pasar los datos en una dirección o en la otra según la señal DIR, o las separa por completo según la señal de habilitación G.</p>
+</header>
+
+<section>
+  <h2>El módulo</h2>
+  <div class="prosa"><p>Dos puertas NOT y dos AND deciden cuál de los dos búferes se habilita; nunca los dos a la vez. Cada búfer lee de una línea y escribe en la otra, así que las dos líneas se declaran <code>inout tri</code>: entran y salen, y pueden tener varias señales encima.</p></div>
+  <div class="panel">
+    <div class="pestanas" role="tablist" aria-label="Polaridad de la señal G">
+      <button class="pestana" role="tab" data-pol="bajo" aria-selected="true">G activa a nivel bajo (código del apunte)</button>
+      <button class="pestana" role="tab" data-pol="alto" aria-selected="false">G activa a nivel alto</button>
+    </div>
+    <div class="grid2">
+      <div class="escena">
+        <svg id="esq" viewBox="0 0 560 330" role="img" aria-labelledby="esq-t"><title id="esq-t">Esquema del transceptor con los valores actuales de cada señal</title></svg>
+        <p class="lectura" id="lectura"></p>
+      </div>
+      <div class="derecha">
+        <div class="ctl-grid" id="ctl"></div>
+        <div class="fila"><span id="modo" class="modo"></span></div>
+        <table class="tv" id="tv">
+          <thead><tr><th id="thg">g</th><th>dir</th><th></th></tr></thead>
+          <tbody>
+            <tr data-g="0" data-dir="0"><td>0</td><td>0</td><td>datos B → A</td></tr>
+            <tr data-g="0" data-dir="1"><td>0</td><td>1</td><td>datos A → B</td></tr>
+            <tr data-g="1" data-dir="x"><td>1</td><td>x</td><td>separación</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <pre id="codigo"></pre>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Qué hace cada línea</h2>
+  <div class="resumen">
+    <div class="tarjeta"><code>inout tri a, inout tri b</code><br>Puertos bidireccionales declarados como red <code>tri</code>: sobre cada uno pueden coincidir el valor que llega del exterior y el que vierte el búfer.</div>
+    <div class="tarjeta"><code>not (ng, g);</code><br>Puertas sin nombre de instancia: no se las vuelve a referenciar, así que basta con la lista de conexiones.</div>
+    <div class="tarjeta"><code>and (sa1, ng, dir);</code><br>Habilita el búfer A → B solo cuando G está activa y DIR = 1. <code>sa2</code> hace lo propio con DIR = 0.</div>
+    <div class="tarjeta"><code>bufif1 (b, a, sa1);</code><br>Lee <code>a</code> y escribe en <code>b</code> si <code>sa1</code> = 1; si no, su salida queda en z y no estorba.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Banco de pruebas</h2>
+  <div class="prosa">
+    <p>El módulo de comprobación instancia el transceptor, conecta dos registros <code>ra</code> y <code>rb</code> a las líneas con <code>assign</code> y va cambiando los estímulos cada 5 unidades de tiempo. <code>$monitor</code> imprime una línea cada vez que cambia alguna de las señales que vigila.</p>
+    <p><strong>Antes de ejecutar cada paso, predice qué valdrán <code>a</code> y <code>b</code>.</strong> Los registros se vuelcan sobre las líneas con <code>assign</code>, así que sobre <code>a</code> coinciden siempre <code>ra</code> y la salida de un búfer: hay que resolver la contingencia.</p>
+  </div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="derecha">
+        <pre id="tbcode"></pre>
+      </div>
+      <div class="derecha">
+        <div class="pasos" id="pasos"></div>
+        <div class="prediccion" id="pred"></div>
+        <pre class="consola" id="consola" aria-live="polite"></pre>
+        <div class="fila"><button class="boton boton-discreto" id="reiniciar">Reiniciar la simulación</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>La pregunta del apunte</h2>
+  <p>¿Qué cambios habría que hacer para que la línea G sea activa por nivel bajo, como en el diseño original, o por nivel alto? Usa las pestañas del simulador para comparar las dos versiones; el código resalta las líneas que cambian.</p>
+  <div class="nota nota-idea">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 16h4"/></svg>
+    <div><b>Idea</b><div class="cuerpo">La polaridad de G se decide en un único sitio: si las AND reciben <code>ng</code> (la G invertida), los búferes se habilitan con g = 0; si reciben <code>g</code> directamente, con g = 1. Cambiar la polaridad es quitar o poner esa puerta NOT y, con ella, el hilo <code>ng</code>. El resto del circuito no se toca.</div></div>
+  </div>
+  <p style="margin-top:var(--space-4)"></p>
+  <div class="nota nota-cuidado">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
+    <div><b>Cuidado</b><div class="cuerpo">Si cambias la polaridad del módulo, el banco de pruebas deja de probar lo mismo: los pasos que antes separaban las líneas ahora las conectan y viceversa. Un banco de pruebas describe el comportamiento esperado; hay que revisarlo junto con el diseño.</div></div>
+  </div>
+</section>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var cls = function(v){ return {0:'cero',1:'uno','0':'cero','1':'uno',x:'x',z:'z'}[v]; };
+  var NOT = function(v){ return v===0?1:v===1?0:'x'; };
+  var AND = function(a,b){ if (a===0||b===0) return 0; if (a===1&&b===1) return 1; return 'x'; };
+  function resolverTri(sen){ var act = sen.filter(function(v){ return v!=='z'; }); if (!act.length) return 'z'; return act.every(function(v){ return v===act[0]; }) ? act[0] : 'x'; }
+  function bufif1(entrada, ctrl){ return ctrl===1 ? entrada : ctrl===0 ? 'z' : 'x'; }
+
+  function simular(pol, g, dir, ra, rb){
+    var ng = NOT(g), ndir = NOT(dir), hab = pol==='bajo' ? ng : g;
+    var sa1 = AND(hab, dir), sa2 = AND(hab, ndir);
+    // a y b dependen mutuamente; sa1 y sa2 nunca valen 1 a la vez (salvo x), iteramos hasta estabilizar
+    var a = ra, b = rb;
+    for (var i=0;i<4;i++){ var na = resolverTri([ra, bufif1(b, sa2)]), nb = resolverTri([rb, bufif1(a, sa1)]); if (na===a && nb===b) break; a = na; b = nb; }
+    return { ng:ng, ndir:ndir, hab:hab, sa1:sa1, sa2:sa2, a:a, b:b, outAB: bufif1(a, sa1), outBA: bufif1(b, sa2) };
+  }
+
+  /* -------- simulador -------- */
+  var est = { pol:'bajo', g:0, dir:1, ra:1, rb:'z' };
+
+  function esquema(s){
+    var pol = est.pol, L = function(c, pts){ return '<polyline class="linea '+cls(c)+'" points="'+pts+'"/>'; };
+    var chip = function(v, x, y, ref){ return '<rect class="chip '+cls(v)+'" x="'+(x-12)+'" y="'+(y-12)+'" width="24" height="24"/><text class="chip-txt '+cls(v)+'" x="'+x+'" y="'+(y+5)+'" text-anchor="middle">'+v+'</text>'+(ref?'<text class="ref" x="'+x+'" y="'+(y-17)+'" text-anchor="middle">'+ref+'</text>':''); };
+    var h = '<rect class="caja-mod" x="120" y="14" width="400" height="300"/><text class="ref" x="126" y="30">Transceiver</text>';
+    // entradas g, dir
+    h += '<text class="pin" x="16" y="60">g</text>'+chip(est.g, 60, 55);
+    h += '<text class="pin" x="16" y="128">dir</text>'+chip(est.dir, 60, 123);
+    // g → (not) → hab
+    if (pol==='bajo'){
+      h += L(est.g, '72,55 150,55') + '<polygon class="puerta" points="150,41 150,69 176,55"/><circle class="burbuja" cx="181" cy="55" r="5"/>' + L(s.hab, '186,55 232,55') + chip(s.hab, 215, 55, 'ng');
+    } else {
+      h += L(est.g, '72,55 232,55') + chip(s.hab, 215, 55, 'g');
+    }
+    // hab a las dos AND
+    h += L(s.hab, '232,55 260,55 260,78 280,78') + L(s.hab, '260,78 260,148 280,148') + '<circle class="nodo" cx="260" cy="78" r="3.5"/>';
+    // dir → AND1; dir → not → ndir → AND2
+    h += L(est.dir, '72,123 200,123 200,98 280,98') + '<circle class="nodo" cx="200" cy="123" r="3.5"/>';
+    h += L(est.dir, '200,123 200,145 130,145 130,168 150,168') + '<polygon class="puerta" points="150,154 150,182 176,168" transform="translate(0,0)"/>'+'<circle class="burbuja" cx="181" cy="168" r="5"/>' + L(s.ndir, '186,168 280,168') + chip(s.ndir, 232, 168, 'ndir');
+    // AND gates
+    var and = function(x,y){ return '<path class="puerta" d="M'+x+' '+(y-16)+' h18 a16 16 0 0 1 0 32 h-18 z"/>'; };
+    h += and(280,88) + and(280,158);
+    h += L(s.sa1, '314,88 420,88 420,215') + chip(s.sa1, 350, 88, 'sa1');
+    h += L(s.sa2, '314,158 360,158 360,270') + chip(s.sa2, 338, 158, 'sa2');
+    // bus a (izq) y b (der)
+    h += '<text class="pin" x="16" y="262">a</text>'+chip(s.a, 60, 257)+'<text class="pin" x="536" y="262">b</text>'+chip(s.b, 500, 257);
+    // búfer A→B (arriba, apunta a la derecha) en y=230
+    h += L(s.a, '72,257 150,257 150,230 400,230') + '<circle class="nodo" cx="150" cy="257" r="3.5"/>';
+    h += '<polygon class="puerta" points="400,215 400,245 440,230"/>';
+    h += L(s.outAB, '440,230 470,230 470,257 488,257') + '<circle class="nodo" cx="470" cy="257" r="3.5"/>';
+    // búfer B→A (abajo, apunta a la izquierda) en y=285
+    h += L(s.b, '470,257 470,285 380,285');
+    h += '<polygon class="puerta" points="380,270 380,300 340,285"/>';
+    h += L(s.outBA, '340,285 150,285 150,257');
+    // etiquetas de búferes
+    h += '<text class="ref" x="450" y="212" text-anchor="middle">a→b</text><text class="ref" x="360" y="314" text-anchor="middle">b→a</text>';
+    return h;
+  }
+
+  function renderSim(){
+    var s = simular(est.pol, est.g, est.dir, est.ra, est.rb);
+    $('esq').innerHTML = esquema(s);
+    // controles
+    var C = $('ctl'); C.innerHTML = '';
+    [['g','habilitación'],['dir','dirección'],['ra','registro sobre a'],['rb','registro sobre b']].forEach(function(p){
+      var k = p[0], vals = k==='g'||k==='dir' ? [0,1] : [0,1,'z'];
+      var d = document.createElement('div'); d.className = 'fuente';
+      d.innerHTML = '<span class="nombre">'+k+'<small>'+p[1]+'</small></span><span class="seg" role="group" aria-label="Valor de '+k+'">'+vals.map(function(v){ return '<button class="v'+v+'" data-k="'+k+'" data-v="'+v+'" aria-pressed="'+(String(est[k])===String(v))+'">'+v+'</button>'; }).join('')+'</span>';
+      C.appendChild(d);
+    });
+    C.querySelectorAll('button').forEach(function(b){ b.addEventListener('click', function(){ var v = b.dataset.v; est[b.dataset.k] = v==='z' ? 'z' : +v; renderSim(); }); });
+    var activo = est.pol==='bajo' ? est.g===0 : est.g===1;
+    var modo = !activo ? 'sep' : est.dir===1 ? 'ab' : 'ba';
+    var M = $('modo'); M.className = 'modo '+modo; M.textContent = modo==='sep' ? 'Separación: ningún búfer habilitado' : modo==='ab' ? 'Datos A → B (sa1 = 1)' : 'Datos B → A (sa2 = 1)';
+    $('thg').className = est.pol==='bajo' ? 'neg' : '';
+    $('tv').querySelectorAll('tbody tr').forEach(function(tr){
+      var gAct = tr.dataset.g === '0'; // fila "0" = G activa
+      var fila = (gAct === activo) && (tr.dataset.dir==='x' || +tr.dataset.dir===est.dir);
+      tr.className = fila ? 'activa' : '';
+      tr.children[0].textContent = est.pol==='bajo' ? tr.dataset.g : (tr.dataset.g==='0'?'1':'0');
+    });
+    var txt;
+    if (modo==='sep') txt = 'Con g = '+est.g+' los dos búferes están en z. Cada línea vale solo lo que le pone su registro: <strong>a = '+s.a+'</strong>, <strong>b = '+s.b+'</strong>.';
+    else if (modo==='ab') txt = 'El búfer a→b vierte a sobre b. Sobre b coinciden rb = '+est.rb+' y '+s.outAB+': <strong>b = '+s.b+'</strong>'+(s.b==='x'?' (contingencia: rb y el búfer discrepan)':'')+'. a solo recibe ra: <strong>a = '+s.a+'</strong>.';
+    else txt = 'El búfer b→a vierte b sobre a. Sobre a coinciden ra = '+est.ra+' y '+s.outBA+': <strong>a = '+s.a+'</strong>'+(s.a==='x'?' (contingencia: ra y el búfer discrepan)':'')+'. b solo recibe rb: <strong>b = '+s.b+'</strong>.';
+    $('lectura').innerHTML = txt;
+    // código
+    var bajo = est.pol==='bajo';
+    $('codigo').innerHTML =
+      '<span class="kw">module</span> <span class="id">Transceiver</span>(<span class="kw">inout tri</span> a, <span class="kw">inout tri</span> b, <span class="kw">input wire</span> g, <span class="kw">input wire</span> dir);\n\n'+
+      '  <span class="kw">wire</span> '+(bajo?'<span class="hl">ng,</span>':'<span class="off">ng,</span>')+'ndir,sa1,sa2;\n\n'+
+      '  '+(bajo?'<span class="hl"><span class="kw">not</span> (ng,g);</span>':'<span class="off"><span class="kw">not</span> (ng,g);</span>')+'        <span class="cm">// No hacemos referencia después => no damos nombres</span>\n'+
+      '  <span class="kw">not</span> (ndir,dir);\n'+
+      '  <span class="kw">and</span> (sa1,<span class="hl">'+(bajo?'ng':'g')+'</span>,dir);      <span class="cm">// sa1 = '+s.sa1+'</span>\n'+
+      '  <span class="kw">and</span> (sa2,<span class="hl">'+(bajo?'ng':'g')+'</span>,ndir);     <span class="cm">// sa2 = '+s.sa2+'</span>\n'+
+      '  <span class="kw">bufif1</span> (b,a,sa1);      <span class="cm">// a → b</span>\n'+
+      '  <span class="kw">bufif1</span> (a,b,sa2);      <span class="cm">// b → a</span>\n'+
+      '<span class="kw">endmodule</span>';
+  }
+  document.querySelectorAll('.pestana').forEach(function(b){ b.addEventListener('click', function(){ est.pol = b.dataset.pol; document.querySelectorAll('.pestana').forEach(function(x){ x.setAttribute('aria-selected', x===b?'true':'false'); }); renderSim(); }); });
+  renderSim();
+
+  /* -------- banco de pruebas -------- */
+  var PASOS = [
+    { t:0,  set:{ra:0,  rb:1,  g:1, dir:0}, src:"      ra=0; rb=1; g=1; dir=0;" },
+    { t:5,  set:{ra:'z',rb:'z',g:1, dir:0}, src:"   #5 ra='bz; rb='bz; g=1; dir=0;" },
+    { t:10, set:{rb:1,  g:0,  dir:0},       src:"   #5 rb=1; g=0; dir=0;" },
+    { t:15, set:{ra:'z',rb:'z',g:1, dir:1}, src:"   #5 ra='bz; rb='bz; g=1; dir=1;" },
+    { t:20, set:{ra:0,  g:0,  dir:1},       src:"   #5 ra=0; g=0; dir=1;" },
+    { t:25, set:{ra:0,  rb:1,  g:0, dir:1}, src:"   #5 ra=0; rb=1; g=0; dir=1;" }
+  ];
+  var tb = { i:0, regs:{ra:'x',rb:'x',g:'x',dir:'x'}, lineas:[], pa:null, pb:null, aciertos:0, intentos:0 };
+
+  function tbCode(){
+    var pre = '<span class="kw">module</span> <span class="id">TestTransceiver</span>;\n\n  <span class="kw">tri</span> a,b;\n  <span class="kw">reg</span> g,dir;\n  <span class="kw">reg</span> ra,rb;\n  <span class="id">Transceiver</span> t(a,b,g,dir);\n  <span class="kw">assign</span> a=ra; <span class="kw">assign</span> b=rb;\n\n  <span class="cm">// Bloque de comportamiento</span>\n  <span class="kw">initial</span>\n    <span class="kw">begin</span>\n      $monitor($time," g=%b, dir=%b, a=%b, b=%b, ra=%b, rb=%b",\n                     g,dir,a,b,ra,rb);\n';
+    PASOS.forEach(function(p, i){ var l = p.src.replace(/'bz/g,"'bz"); pre += (i===tb.i ? '<span class="hl">'+l+'</span>' : (i<tb.i ? l : '<span style="opacity:.55">'+l+'</span>'))+'\n'; });
+    pre += '    <span class="kw">end</span>\n\n<span class="kw">endmodule</span>';
+    $('tbcode').innerHTML = pre;
+  }
+  function tbPasos(){
+    var P = $('pasos'); P.innerHTML = '';
+    PASOS.forEach(function(p, i){ P.insertAdjacentHTML('beforeend', '<span class="paso '+(i<tb.i?'hecho':i===tb.i?'actual':'')+'"'+(i===tb.i?' aria-current="step"':'')+'><span class="n">'+(i<tb.i?'✓':(i+1))+'</span>t = '+p.t+'</span>'); });
+  }
+  function seg(k, vals, sel){ return '<span class="seg" role="group" aria-label="Predicción de '+k+'">'+vals.map(function(v){ return '<button class="v'+v+'" data-p="'+k+'" data-v="'+v+'" aria-pressed="'+(String(sel)===String(v))+'">'+v+'</button>'; }).join('')+'</span>'; }
+  function tbPred(){
+    var D = $('pred');
+    if (tb.i >= PASOS.length){
+      D.innerHTML = '<div><b>Simulación terminada.</b> Predicciones acertadas: '+tb.aciertos+' de '+tb.intentos+'.</div><div class="pie">Fíjate en t = 25: con g = 0 y dir = 1 el búfer a→b vierte a = 0 sobre b, pero rb = 1 también está volcado sobre b. Dos señales distintas sobre la misma red <code>tri</code>: el resultado es x.</div>';
+      return;
+    }
+    var p = PASOS[tb.i], prox = Object.assign({}, tb.regs, p.set);
+    D.innerHTML = '<div><span class="etiqueta etiqueta-neutra">Paso '+(tb.i+1)+' · t = '+p.t+'</span></div>'
+      + '<div style="font-size:15px;line-height:22px">Se ejecuta <code>'+p.src.trim()+'</code>. Quedan g = '+prox.g+', dir = '+prox.dir+', ra = '+prox.ra+', rb = '+prox.rb+'. ¿Qué valdrán a y b?</div>'
+      + '<div class="fila-p"><div>a = '+seg('a',[0,1,'x','z'],tb.pa)+'</div><div>b = '+seg('b',[0,1,'x','z'],tb.pb)+'</div></div>'
+      + '<div class="fila"><button class="boton boton-primario" id="ejecutar"'+(tb.pa===null||tb.pb===null?' disabled':'')+'>Comprobar y ejecutar</button><button class="boton boton-discreto" id="saltar">Ejecutar sin predecir</button></div>'
+      + '<div id="fb"></div>';
+    D.querySelectorAll('.seg button').forEach(function(b){ b.addEventListener('click', function(){ var v = b.dataset.v; tb['p'+b.dataset.p] = (v==='x'||v==='z') ? v : +v; tbPred(); }); });
+    $('ejecutar').addEventListener('click', function(){ ejecutar(true); });
+    $('saltar').addEventListener('click', function(){ ejecutar(false); });
+  }
+  function ejecutar(conPred){
+    var p = PASOS[tb.i]; Object.assign(tb.regs, p.set);
+    var r = tb.regs, s = simular('bajo', r.g, r.dir, r.ra, r.rb);
+    var linea = String(p.t).padStart(3,' ')+' g='+r.g+', dir='+r.dir+', a='+s.a+', b='+s.b+', ra='+r.ra+', rb='+r.rb;
+    tb.lineas.push(linea);
+    var fb = '';
+    if (conPred){
+      tb.intentos++;
+      var ok = String(tb.pa)===String(s.a) && String(tb.pb)===String(s.b);
+      if (ok) tb.aciertos++;
+      fb = ok ? 'Correcto: a = '+s.a+', b = '+s.b+'.' : 'Habías dicho a = '+tb.pa+', b = '+tb.pb+'; la simulación da a = '+s.a+', b = '+s.b+'.';
+      var expl = explicar(r, s);
+      tb.ultimoFb = '<div class="nota '+(ok?'nota-correcto':'nota-incorrecto')+'" role="status" style="max-width:none"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+(ok?'M3 10l4 4 10-9':'M5 5l10 10M15 5 5 15')+'"/></svg><div><b>'+(ok?'Correcto':'Incorrecto')+'</b><div class="cuerpo">'+fb+' '+expl+'</div></div></div>';
+    } else tb.ultimoFb = '<div class="nota nota-idea" style="max-width:none"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 16h4"/></svg><div><b>t = '+p.t+'</b><div class="cuerpo">'+explicar(r, s)+'</div></div></div>';
+    tb.i++; tb.pa = null; tb.pb = null;
+    // reflejar también en el simulador
+    est.pol = 'bajo'; est.g = r.g; est.dir = r.dir; est.ra = r.ra; est.rb = r.rb;
+    document.querySelectorAll('.pestana').forEach(function(x){ x.setAttribute('aria-selected', x.dataset.pol==='bajo'?'true':'false'); });
+    renderSim(); tbRender();
+  }
+  function explicar(r, s){
+    if (r.g===1) return 'g = 1 deshabilita los dos búferes: a vale lo que le pone ra ('+r.ra+') y b lo que le pone rb ('+r.rb+').';
+    if (r.dir===0) return 'g = 0 y dir = 0 habilitan el búfer b→a: sobre a coinciden ra = '+r.ra+' y b = '+s.b+(s.a==='x'?', que discrepan: a = x.':' → a = '+s.a+'.');
+    return 'g = 0 y dir = 1 habilitan el búfer a→b: sobre b coinciden rb = '+r.rb+' y a = '+s.a+(s.b==='x'?', que discrepan: contingencia, b = x.':' → b = '+s.b+'.');
+  }
+  function tbRender(){
+    tbCode(); tbPasos(); tbPred();
+    var C = $('consola');
+    C.innerHTML = tb.lineas.length ? tb.lineas.map(function(l, i){ return '<span class="'+(i===tb.lineas.length-1?'nuevo':'')+'">'+l.replace(/=x/g,'=<span class="x">x</span>')+'</span>'; }).join('\n') : '<span style="opacity:.6">// salida de $monitor</span>';
+    if (tb.ultimoFb) { $('pred').insertAdjacentHTML('beforeend', tb.ultimoFb); }
+  }
+  $('reiniciar').addEventListener('click', function(){ tb = { i:0, regs:{ra:'x',rb:'x',g:'x',dir:'x'}, lineas:[], pa:null, pb:null, aciertos:0, intentos:0 }; tbRender(); });
+  tbRender();
+})();
+</script>
+<footer>Computadores I · Grado en Ingeniería Informática · Daniel Hernández de la Iglesia (PB3)<br>Material de prácticas basado en <a href="http://avellano.usal.es/~compi/">la web de la asignatura</a>.</footer>
+</body>
+</html>
