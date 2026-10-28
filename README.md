@@ -28,3 +28,19 @@ Abre `index.html` para acceder al índice general. El sitio funciona directament
 6. Conserva el pie de autoría y la estética de la sesión 5, que sirve como referencia.
 
 Las carpetas pendientes se dejan vacías hasta incorporar su contenido. Las rutas sin espacios ni tildes facilitan la publicación del sitio.
+
+## Publicación
+
+- Web: https://danihiglesias.github.io/computadoresI-practica/
+- Repositorio: https://github.com/danihiglesias/computadoresI-practica
+- GitHub Pages publica desde la rama `main`, carpeta raíz.
+
+Para publicar cambios desde esta carpeta:
+
+```sh
+git add .
+git commit -m "Actualizar materiales de prácticas"
+git push
+```
+
+GitHub Pages actualizará la web tras completar el despliegue. El archivo `.nojekyll` permite servir directamente los materiales estáticos.
