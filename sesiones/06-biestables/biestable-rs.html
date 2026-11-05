@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biestable RS con puertas NOR</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Lato:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: columna de lectura (68 ch) con simulador y banco de pruebas a ancho completo; tema único claro del sistema Computadores */
+:root {
+  --papel:#f8f4ec; --papel-elevado:#ffffff; --papel-hundido:#efe8db; --piedra:#e3d9c8; --piedra-fuerte:#857869;
+  --tinta:#2a2420; --tinta-suave:#6b5f55;
+  --vitor:#a8192b; --vitor-suave:#f7dddc; --sobre-vitor:#ffffff;
+  --dorado:#d9a441; --dorado-texto:#8a5a0a; --dorado-suave:#fbeed2;
+  --centenario:#385e9d; --centenario-suave:#dde6f4; --sobre-centenario:#ffffff;
+  --correcto:#1f6f43; --correcto-suave:#dcefe2;
+  --incorrecto:var(--vitor); --incorrecto-suave:var(--vitor-suave);
+  --foco:var(--centenario); --diag-bus:var(--tinta-suave);
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
+  --radius-sm:6px; --radius-md:12px; --radius-lg:20px; --radius-pill:999px;
+  --sombra-tarjeta:0 1px 2px rgba(42,36,32,.06), 0 4px 12px rgba(42,36,32,.06);
+  --font-display:"Bricolage Grotesque","Lato",system-ui,sans-serif;
+  --font-sans:"Lato",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme: light;
+}
+* { box-sizing:border-box; }
+body { background:var(--papel); color:var(--tinta); font-family:var(--font-sans); font-size:17px; line-height:27px; margin:0;
+  padding-block:var(--space-6) var(--space-8); padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+.wrap { max-width:960px; margin:0 auto; display:flex; flex-direction:column; gap:var(--space-7); }
+.prosa { max-width:68ch; }
+.prosa p { margin:0 0 var(--space-4); }
+h1,h2,h3 { font-family:var(--font-display); text-wrap:balance; margin:0; }
+h1 { font-size:40px; line-height:44px; font-weight:700; letter-spacing:-.02em; margin:var(--space-2) 0 var(--space-4); }
+h2 { font-size:28px; line-height:34px; font-weight:600; letter-spacing:-.01em; margin-bottom:var(--space-4); display:inline-block; box-shadow:inset 0 -4px 0 var(--dorado); }
+h3 { font-size:20px; line-height:26px; font-weight:600; }
+.etiqueta { display:inline-flex; align-items:center; gap:var(--space-1); font-size:12px; line-height:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px var(--space-2); border-radius:var(--radius-pill); background:var(--vitor-suave); color:var(--vitor); }
+.etiqueta-neutra { background:var(--papel-hundido); color:var(--tinta-suave); }
+.etiqueta-centenario { background:var(--centenario-suave); color:var(--centenario); }
+.cabecera { display:flex; align-items:center; gap:var(--space-3); }
+.cabecera img { width:40px; height:40px; }
+code { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:15px; background:var(--papel-hundido); padding:1px 6px; border-radius:var(--radius-sm); }
+pre { font-family:var(--font-mono); font-size:15px; line-height:24px; background:var(--papel-hundido); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); margin:0; overflow-x:auto; }
+pre .kw { color:var(--vitor); font-weight:600; } pre .id { color:var(--centenario); } pre .cm { color:var(--tinta-suave); }
+pre .hl { background:var(--dorado); color:var(--tinta); border-radius:3px; padding:0 2px; }
+pre.consola { background:var(--tinta); color:var(--papel); min-height:60px; font-size:14px; }
+pre.consola .nuevo { background:rgba(217,164,65,.28); }
+pre.consola .x { color:var(--dorado); font-weight:600; }
+
+.nota { display:grid; grid-template-columns:20px 1fr; gap:var(--space-3); padding:var(--space-4); border-radius:var(--radius-md); background:var(--papel-elevado); border:1px solid var(--piedra); font-size:15px; line-height:22px; max-width:68ch; }
+.nota svg { width:20px; height:20px; margin-top:1px; }
+.nota b { display:block; margin-bottom:2px; }
+.nota-idea { background:var(--centenario-suave); border-color:var(--centenario-suave); color:var(--centenario); }
+.nota-cuidado { background:var(--dorado-suave); border-color:var(--dorado-suave); color:var(--dorado-texto); }
+.nota-correcto { background:var(--correcto-suave); border-color:var(--correcto-suave); color:var(--correcto); }
+.nota-incorrecto { background:var(--incorrecto-suave); border-color:var(--incorrecto-suave); color:var(--incorrecto); }
+.nota .cuerpo { color:var(--tinta); }
+
+.panel { background:var(--papel-elevado); border-radius:var(--radius-lg); box-shadow:var(--sombra-tarjeta); padding:var(--space-5); display:flex; flex-direction:column; gap:var(--space-5); }
+.grid2 { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:var(--space-5); align-items:start; }
+.grid2.iguales { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+@media (max-width:720px) { .grid2, .grid2.iguales { grid-template-columns:1fr; } }
+.escena { min-width:0; } .escena svg { width:100%; height:auto; display:block; }
+.derecha { display:flex; flex-direction:column; gap:var(--space-4); min-width:0; }
+
+/* esquema */
+.linea { stroke:var(--diag-bus); stroke-width:3; fill:none; stroke-linecap:round; stroke-linejoin:round; transition:stroke 250ms ease-out; }
+.linea.uno { stroke:var(--vitor); } .linea.cero { stroke:var(--tinta); } .linea.x { stroke:var(--dorado-texto); stroke-dasharray:3 5; }
+.puerta { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2.5; stroke-linejoin:round; transition:fill 250ms ease-out; }
+.puerta.activa { fill:var(--dorado-suave); stroke:var(--dorado-texto); }
+.burbuja { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2.5; }
+.nodo { fill:var(--tinta); }
+.pin { font-family:var(--font-display); font-size:17px; font-weight:600; fill:var(--tinta); }
+.ref { font-family:var(--font-mono); font-size:12px; fill:var(--tinta-suave); }
+.chip { rx:5; }
+.chip.uno { fill:var(--vitor); } .chip.cero { fill:var(--papel-hundido); stroke:var(--piedra); stroke-width:1.5; } .chip.x { fill:var(--dorado); }
+.chip.marca { stroke:var(--dorado-texto); stroke-width:3; }
+.chip-txt { font-family:var(--font-mono); font-size:15px; font-weight:600; }
+.chip-txt.uno { fill:var(--sobre-vitor); } .chip-txt.cero { fill:var(--tinta); } .chip-txt.x { fill:var(--tinta); }
+.caja-mod { fill:none; stroke:var(--piedra-fuerte); stroke-width:1.5; stroke-dasharray:6 5; rx:12; }
+
+/* controles */
+.ctl-grid { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2); }
+@media (max-width:420px) { .ctl-grid { grid-template-columns:1fr; } }
+.fuente { display:grid; grid-template-columns:auto 1fr; gap:var(--space-2); align-items:center; padding:var(--space-2) var(--space-3); border:1px solid var(--piedra); border-radius:var(--radius-md); font-size:15px; }
+.fuente .nombre { font-family:var(--font-mono); font-weight:600; font-size:15px; }
+.fuente .nombre small { display:block; font:400 11px/14px var(--font-sans); color:var(--tinta-suave); letter-spacing:.04em; }
+.seg { display:inline-flex; border:1px solid var(--piedra-fuerte); border-radius:var(--radius-sm); overflow:hidden; justify-self:end; }
+.seg button { font:600 16px/22px var(--font-mono); width:38px; height:38px; border:0; border-left:1px solid var(--piedra); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.seg button:first-child { border-left:0; }
+.seg button[aria-pressed="true"].v0 { background:var(--tinta); color:var(--papel); }
+.seg button[aria-pressed="true"].v1 { background:var(--vitor); color:var(--sobre-vitor); }
+.seg button[aria-pressed="true"].vx { background:var(--dorado); color:var(--tinta); }
+.seg button:focus-visible, .boton:focus-visible, .opcion:focus-visible { outline:2px solid var(--foco); outline-offset:2px; }
+.boton { font:700 15px/20px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.boton-primario { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.boton-discreto { background:transparent; border-color:transparent; color:var(--vitor); }
+.boton:disabled { opacity:.45; cursor:not-allowed; }
+.fila { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; }
+.lectura { font-size:15px; line-height:22px; color:var(--tinta-suave); margin:0; }
+.lectura strong { color:var(--tinta); }
+.modo { display:inline-flex; align-items:center; gap:var(--space-2); font-size:15px; font-weight:700; padding:var(--space-2) var(--space-3); border-radius:var(--radius-pill); }
+.modo.set { background:var(--vitor-suave); color:var(--vitor); } .modo.reset { background:var(--centenario-suave); color:var(--centenario); }
+.modo.mem { background:var(--papel-hundido); color:var(--tinta-suave); } .modo.inv { background:var(--dorado-suave); color:var(--dorado-texto); }
+
+table.tv { border-collapse:collapse; font-family:var(--font-mono); font-size:16px; }
+.tv th { font-family:var(--font-display); font-weight:600; padding:var(--space-2) var(--space-3); border-bottom:2px solid var(--tinta); text-align:center; }
+.tv td { padding:var(--space-2) var(--space-3); text-align:center; border-bottom:1px solid var(--piedra); }
+.tv th:nth-child(3), .tv td:nth-child(3) { border-left:2px solid var(--tinta); }
+.tv th:nth-child(5), .tv td:nth-child(5) { text-align:left; font-family:var(--font-sans); font-size:15px; }
+.tv tr.activa td { background:var(--dorado); font-weight:600; }
+
+/* traza de eventos */
+ol.traza { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:var(--space-2); font-size:15px; line-height:22px; }
+ol.traza li { display:grid; grid-template-columns:24px 1fr; gap:var(--space-2); align-items:start; }
+ol.traza .n { width:22px; height:22px; border-radius:50%; display:inline-grid; place-items:center; font:600 12px var(--font-mono); background:var(--papel-hundido); color:var(--tinta-suave); border:1px solid var(--piedra); margin-top:1px; }
+ol.traza li.asig .n { background:var(--tinta); color:var(--papel); border-color:var(--tinta); }
+ol.traza li.ultimo { background:var(--dorado-suave); border-radius:var(--radius-sm); }
+ol.traza .igual { color:var(--tinta-suave); }
+
+/* banco de pruebas */
+.pasos { display:flex; flex-wrap:wrap; gap:var(--space-1); align-items:center; font-size:14px; }
+.paso { display:inline-flex; align-items:center; gap:6px; padding:3px 10px 3px 3px; border-radius:var(--radius-pill); color:var(--tinta-suave); }
+.paso .n { width:22px; height:22px; border-radius:50%; display:inline-grid; place-items:center; font:600 12px var(--font-mono); background:var(--papel-hundido); color:var(--tinta-suave); border:1px solid var(--piedra); }
+.paso.hecho .n { background:var(--papel-elevado); color:var(--correcto); border-color:var(--correcto); }
+.paso.actual { background:var(--dorado); color:var(--tinta); font-weight:700; }
+.paso.actual .n { background:var(--tinta); color:var(--papel); border-color:var(--tinta); }
+.prediccion { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--piedra); border-radius:var(--radius-md); }
+.prediccion .fila-p { display:flex; flex-wrap:wrap; gap:var(--space-4); align-items:center; }
+.prediccion .fila-p > div { display:flex; align-items:center; gap:var(--space-2); font-family:var(--font-mono); font-weight:600; }
+.pie { font-size:13px; line-height:18px; color:var(--tinta-suave); }
+.resumen { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--space-3); }
+.tarjeta { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); background:var(--papel-elevado); font-size:15px; line-height:22px; }
+.tarjeta code { display:inline-block; margin-bottom:var(--space-2); font-weight:600; color:var(--vitor); }
+.carrera { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-3); min-width:0; }
+.carrera h3 code { font-size:17px; }
+.carrera .final { font-size:15px; font-weight:700; }
+
+/* pregunta tipo test */
+.opciones { display:flex; flex-direction:column; gap:var(--space-2); }
+.opcion { text-align:left; font:400 15px/22px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.opcion[aria-pressed="true"] { border-color:var(--vitor); box-shadow:inset 0 0 0 1px var(--vitor); }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+.nav-leccion{max-width:960px;margin:0 auto var(--space-5);display:flex;justify-content:space-between;gap:var(--space-3);font-size:14px;flex-wrap:wrap}.nav-leccion a{color:var(--centenario)}.nav-leccion span{color:var(--tinta-suave)}
+footer{max-width:960px;margin:48px auto 0;font-size:13px;line-height:18px;color:var(--tinta-suave)}footer a{color:var(--vitor)}
+</style>
+</head>
+<body>
+<nav class="nav-leccion" aria-label="Navegación de la lección"><a href="index.html">← Índice de la sesión 6</a><span>1</span><span>Siguiente: asignación no bloqueante (próximamente)</span></nav>
+<div class="wrap">
+<header class="prosa">
+  <div class="cabecera">
+    <img alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%236b5f55'%3E%3Crect x='18' y='2' width='4' height='8' rx='1'/%3E%3Crect x='30' y='2' width='4' height='8' rx='1'/%3E%3Crect x='42' y='2' width='4' height='8' rx='1'/%3E%3Crect x='18' y='54' width='4' height='8' rx='1'/%3E%3Crect x='30' y='54' width='4' height='8' rx='1'/%3E%3Crect x='42' y='54' width='4' height='8' rx='1'/%3E%3Crect x='2' y='18' width='8' height='4' rx='1'/%3E%3Crect x='2' y='30' width='8' height='4' rx='1'/%3E%3Crect x='2' y='42' width='8' height='4' rx='1'/%3E%3Crect x='54' y='18' width='8' height='4' rx='1'/%3E%3Crect x='54' y='30' width='8' height='4' rx='1'/%3E%3Crect x='54' y='42' width='8' height='4' rx='1'/%3E%3C/g%3E%3Crect x='8' y='8' width='48' height='48' rx='12' fill='%23a8192b'/%3E%3Crect x='16' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='25' y='24' width='7' height='16' rx='2' fill='%23f7dddc' fill-opacity='.35'/%3E%3Crect x='34' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='43' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3C/svg%3E">
+    <span class="etiqueta">Computadores · Lógica digital · Ejercicio</span>
+  </div>
+  <h1>Biestable RS con puertas NOR</h1>
+  <p>Hasta ahora todos los circuitos eran <strong>combinacionales</strong>: la salida dependía solo de las entradas de ese instante. Un <strong>biestable</strong> es el circuito secuencial más sencillo: recuerda un bit. El truco está en la <strong>realimentación</strong>: dos puertas NOR cuya salida entra en la otra. Así, cuando R y S vuelven a 0, el circuito sigue mostrando lo último que se le ordenó.</p>
+</header>
+
+<section>
+  <h2>El módulo</h2>
+  <div class="prosa"><p>La puerta de arriba calcula <code>Q</code> a partir de <code>R</code> y de <code>nQ</code>; la de abajo calcula <code>nQ</code> a partir de <code>S</code> y de <code>Q</code>. Cambia R y S y observa cómo se propaga cada cambio de una puerta a la otra. El circuito arranca con Q y nQ en <code>x</code>: nadie les ha dado todavía un valor.</p></div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="escena">
+        <svg id="esq" viewBox="0 0 560 300" role="img" aria-labelledby="esq-t"><title id="esq-t">Esquema del biestable RS con dos puertas NOR realimentadas y los valores actuales de cada señal</title></svg>
+        <p class="lectura" id="lectura"></p>
+      </div>
+      <div class="derecha">
+        <div class="ctl-grid" id="ctl"></div>
+        <div class="fila"><span id="modo" class="modo"></span><button class="boton boton-discreto" id="arranque">Volver a Q = nQ = x</button></div>
+        <table class="tv" id="tv">
+          <thead><tr><th>R</th><th>S</th><th>Q</th><th>nQ</th><th></th></tr></thead>
+          <tbody>
+            <tr data-r="0" data-s="0"><td>0</td><td>0</td><td>Q</td><td>nQ</td><td>memoria: no cambia</td></tr>
+            <tr data-r="0" data-s="1"><td>0</td><td>1</td><td>1</td><td>0</td><td>puesta a uno (<em>set</em>)</td></tr>
+            <tr data-r="1" data-s="0"><td>1</td><td>0</td><td>0</td><td>1</td><td>puesta a cero (<em>reset</em>)</td></tr>
+            <tr data-r="1" data-s="1"><td>1</td><td>1</td><td>0</td><td>0</td><td>no válido: Q = nQ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <pre id="codigo"></pre>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Qué hace cada línea</h2>
+  <div class="resumen">
+    <div class="tarjeta"><code>output wire Q, output wire nQ</code><br>Las dos salidas son cables: su valor lo fija en todo momento la puerta que las conduce. No hace falta un <code>reg</code> para que el circuito recuerde; la memoria sale del lazo entre las puertas.</div>
+    <div class="tarjeta"><code>nor (Q,R,nQ);</code><br>El primer argumento de una primitiva es su salida. Esta NOR lee <code>nQ</code>, que es la salida de la otra: ahí está la realimentación.</div>
+    <div class="tarjeta"><code>nor (nQ,S,Q);</code><br>La puerta simétrica: lee <code>Q</code> y produce <code>nQ</code>. Cada salida depende de la otra; Verilog lo resuelve evaluando eventos hasta que nada cambia.</div>
+    <div class="tarjeta"><code>RS biestable(Q,nQ, R,S);</code><br>Instancia por posición: el orden debe coincidir con el de la cabecera del módulo (Q, nQ, R, S), no con el nombre de las variables.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Banco de pruebas</h2>
+  <div class="prosa">
+    <p>El módulo <code>TestRS</code> conduce R y S desde dos registros y cambia los estímulos cada 5 unidades de tiempo. <code>$monitor</code> imprime una línea en cada instante en que cambia alguna de las señales que vigila.</p>
+    <p><strong>Antes de ejecutar cada paso, predice cuánto valdrán <code>Q</code> y <code>nQ</code>.</strong> Recuerda que con R = S = 0 el biestable conserva lo que tenía, así que hay que llevar la cuenta del estado anterior.</p>
+  </div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="derecha">
+        <pre id="tbcode"></pre>
+      </div>
+      <div class="derecha">
+        <div class="pasos" id="pasos"></div>
+        <div class="prediccion" id="pred"></div>
+        <pre class="consola" id="consola" aria-live="polite"></pre>
+        <div class="fila"><button class="boton boton-discreto" id="reiniciar">Reiniciar la simulación</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="prosa">
+    <h2>La pregunta del apunte</h2>
+    <p>¿Por qué la salida es diferente en la última línea (t = 35) y en la antepenúltima (t = 25)? En los dos casos se parte del mismo estado (R = S = 1, Q = nQ = 0) y se llega a las mismas entradas (R = S = 0). Lo único que cambia es <strong>el orden</strong> en que están escritas las dos asignaciones. Avanza evento a evento en cada caso.</p>
+  </div>
+  <div class="panel">
+    <div class="grid2 iguales">
+      <div class="carrera" id="c25"></div>
+      <div class="carrera" id="c35"></div>
+    </div>
+  </div>
+  <div class="prosa" style="margin-top:var(--space-6)">
+    <h3 style="margin-bottom:var(--space-3)">Comprueba que lo has entendido</h3>
+    <p>¿Qué explica la diferencia entre t = 25 y t = 35?</p>
+    <div class="opciones" id="opciones"></div>
+    <div id="fbtest" style="margin-top:var(--space-3)"></div>
+  </div>
+</section>
+
+<section class="prosa">
+  <div class="nota nota-idea">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 16h4"/></svg>
+    <div><b>Idea</b><div class="cuerpo">Desde el estado no válido (Q = nQ = 0), la primera entrada que baja a 0 hace que su puerta saque un 1, y ese 1 fuerza a 0 la otra salida antes de que llegue el segundo cambio. <strong>Gana la entrada que se suelta primero.</strong> En el código, «primero» es la asignación que aparece antes en la línea: <code>R=0; S=0;</code> deja Q = 1; <code>S=0; R=0;</code> deja Q = 0.</div></div>
+  </div>
+  <p style="margin-top:var(--space-4)"></p>
+  <div class="nota nota-cuidado">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
+    <div><b>Cuidado</b><div class="cuerpo">En un circuito real R y S nunca bajan «a la vez» con precisión infinita: el resultado depende de qué señal llegue antes, y eso no se controla. Es una <strong>condición de carrera</strong> y el motivo por el que R = S = 1 se considera una combinación prohibida: lo que viene después es impredecible. En el siguiente punto de la sesión verás la asignación no bloqueante (<code>&lt;=</code>), que cambia precisamente cómo se aplican estas dos asignaciones.</div></div>
+  </div>
+</section>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var cls = function(v){ return {0:'cero',1:'uno',x:'x'}[v]; };
+  var NOR = function(a,b){ if (a===1||b===1) return 0; if (a===0&&b===0) return 1; return 'x'; };
+  var copia = function(o){ return {R:o.R, S:o.S, Q:o.Q, nQ:o.nQ}; };
+
+  /* Asignación bloqueante a R o S y propagación de eventos por las dos NOR, igual que el simulador:
+     cada cambio despierta a la puerta que lo lee, y así hasta que nada cambia. */
+  function asignar(st, k, v){
+    var ev = [{tipo:'asig', k:k, v:v, antes:st[k], cambia: st[k]!==v, est:null}];
+    if (st[k]===v){ ev[0].est = copia(st); return ev; }
+    st[k] = v; ev[0].est = copia(st);
+    var cola = [k==='R' ? 'Q' : 'nQ'], n = 0;
+    while (cola.length && n++ < 20){
+      var g = cola.shift();
+      var a = g==='Q' ? st.R : st.S, b = g==='Q' ? st.nQ : st.Q, nuevo = NOR(a, b);
+      var e = {tipo:'puerta', g:g, a:a, b:b, antes:st[g], v:nuevo, cambia: nuevo!==st[g]};
+      if (e.cambia){ st[g] = nuevo; cola.push(g==='Q' ? 'nQ' : 'Q'); }
+      e.est = copia(st); ev.push(e);
+    }
+    return ev;
+  }
+  function textoEvento(e){
+    if (e.tipo==='asig') return e.cambia ? '<code>'+e.k+'='+e.v+'</code>: '+e.k+' pasa de '+e.antes+' a '+e.v+'.' : '<code>'+e.k+'='+e.v+'</code>: '+e.k+' ya valía '+e.v+'; no hay evento.';
+    var f = e.g==='Q' ? 'nor(R='+e.a+', nQ='+e.b+')' : 'nor(S='+e.a+', Q='+e.b+')';
+    var donde = e.g==='Q' ? 'NOR de arriba' : 'NOR de abajo';
+    return donde+': '+f+' = '+e.v+' → '+(e.cambia ? '<strong>'+e.g+' pasa de '+e.antes+' a '+e.v+'</strong>' : '<span class="igual">'+e.g+' sigue en '+e.v+'</span>');
+  }
+
+  /* -------- esquema -------- */
+  function esquema(st, resalte, marca){
+    var L = function(c, pts){ return '<polyline class="linea '+cls(c)+'" points="'+pts+'"/>'; };
+    var chip = function(v, x, y, m){ return '<rect class="chip '+cls(v)+(m?' marca':'')+'" x="'+(x-12)+'" y="'+(y-12)+'" width="24" height="24"/><text class="chip-txt '+cls(v)+'" x="'+x+'" y="'+(y+5)+'" text-anchor="middle">'+v+'</text>'; };
+    var nor = function(x, y, act){ return '<path class="puerta'+(act?' activa':'')+'" d="M'+x+' '+(y-24)+' Q'+(x+16)+' '+y+' '+x+' '+(y+24)+' Q'+(x+50)+' '+(y+24)+' '+(x+70)+' '+y+' Q'+(x+50)+' '+(y-24)+' '+x+' '+(y-24)+' Z"/><circle class="burbuja" cx="'+(x+75)+'" cy="'+y+'" r="5"/>'; };
+    var h = '<rect class="caja-mod" x="110" y="20" width="350" height="260"/><text class="ref" x="118" y="36">RS</text>';
+    // entradas
+    h += '<text class="pin" x="16" y="83">R</text>' + L(st.R, '72,78 206,78') + chip(st.R, 60, 78, marca==='R');
+    h += '<text class="pin" x="16" y="227">S</text>' + L(st.S, '72,222 206,222') + chip(st.S, 60, 222, marca==='S');
+    // salidas y realimentación cruzada
+    h += L(st.Q, '280,90 488,90') + L(st.Q, '340,90 340,135 150,165 150,198 206,198') + '<circle class="nodo" cx="340" cy="90" r="3.5"/>';
+    h += L(st.nQ, '280,210 488,210') + L(st.nQ, '340,210 340,165 175,135 175,102 206,102') + '<circle class="nodo" cx="340" cy="210" r="3.5"/>';
+    h += nor(200, 90, resalte==='Q') + nor(200, 210, resalte==='nQ');
+    h += '<text class="ref" x="235" y="60" text-anchor="middle">nor (Q,R,nQ)</text><text class="ref" x="235" y="250" text-anchor="middle">nor (nQ,S,Q)</text>';
+    h += chip(st.Q, 500, 90, resalte==='Q') + '<text class="pin" x="520" y="95">Q</text>';
+    h += chip(st.nQ, 500, 210, resalte==='nQ') + '<text class="pin" x="520" y="215">nQ</text>';
+    return h;
+  }
+  function modoDe(st){
+    if (st.Q==='x' || st.nQ==='x') return ['inv','Q y nQ sin valor conocido (x)'];
+    if (st.Q===0 && st.nQ===0) return ['inv','Estado no válido: Q = nQ = 0'];
+    if (st.R===0 && st.S===0) return ['mem','Memoria: Q = '+st.Q+' se conserva'];
+    return st.Q===1 ? ['set','Puesta a uno: Q = 1'] : ['reset','Puesta a cero: Q = 0'];
+  }
+
+  /* -------- simulador -------- */
+  var est = {R:0, S:0, Q:'x', nQ:'x'}, ultimaTraza = null;
+
+  function renderSim(){
+    $('esq').innerHTML = esquema(est, null, null);
+    var C = $('ctl'); C.innerHTML = '';
+    [['R','reset: pone Q a 0'],['S','set: pone Q a 1']].forEach(function(p){
+      var k = p[0], d = document.createElement('div'); d.className = 'fuente';
+      d.innerHTML = '<span class="nombre">'+k+'<small>'+p[1]+'</small></span><span class="seg" role="group" aria-label="Valor de '+k+'">'+[0,1].map(function(v){ return '<button class="v'+v+'" data-k="'+k+'" data-v="'+v+'" aria-pressed="'+(est[k]===v)+'">'+v+'</button>'; }).join('')+'</span>';
+      C.appendChild(d);
+    });
+    C.querySelectorAll('button').forEach(function(b){ b.addEventListener('click', function(){ ultimaTraza = asignar(est, b.dataset.k, +b.dataset.v); renderSim(); }); });
+    var m = modoDe(est), M = $('modo'); M.className = 'modo '+m[0]; M.textContent = m[1];
+    $('tv').querySelectorAll('tbody tr').forEach(function(tr){ tr.className = (+tr.dataset.r===est.R && +tr.dataset.s===est.S) ? 'activa' : ''; });
+    var txt;
+    if (!ultimaTraza) txt = 'Con Q y nQ en x, R = S = 0 no basta para decidir nada: nor(0, x) = x. Pon S o R a 1 para fijar el biestable.';
+    else txt = 'Último cambio, evento a evento: ' + ultimaTraza.map(function(e, i){ return (i+1)+') '+textoEvento(e).replace(/\.$/,''); }).join('; ')+'.';
+    $('lectura').innerHTML = txt;
+    $('codigo').innerHTML =
+      '<span class="kw">module</span> <span class="id">RS</span>(<span class="kw">output wire</span> Q, <span class="kw">output wire</span> nQ, <span class="kw">input wire</span> R, <span class="kw">input wire</span> S);\n'+
+      '  <span class="kw">nor</span> (Q,R,nQ);     <span class="cm">// Q  = nor(R='+est.R+', nQ='+est.nQ+') = '+est.Q+'</span>\n'+
+      '  <span class="kw">nor</span> (nQ,S,Q);     <span class="cm">// nQ = nor(S='+est.S+', Q='+est.Q+') = '+est.nQ+'</span>\n'+
+      '<span class="kw">endmodule</span>';
+  }
+  $('arranque').addEventListener('click', function(){ est = {R:0, S:0, Q:'x', nQ:'x'}; ultimaTraza = null; renderSim(); });
+  renderSim();
+
+  /* -------- banco de pruebas -------- */
+  var PASOS = [
+    { t:0,  a:[['R',0],['S',0]], src:"R=0;S=0;" },
+    { t:5,  a:[['R',0],['S',1]], src:"#5 R=0;S=1;" },
+    { t:10, a:[['R',0],['S',0]], src:"#5 R=0;S=0;" },
+    { t:15, a:[['R',1],['S',0]], src:"#5 R=1;S=0;" },
+    { t:20, a:[['R',1],['S',1]], src:"#5 R=1;S=1;" },
+    { t:25, a:[['R',0],['S',0]], src:"#5 R=0;S=0;" },
+    { t:30, a:[['R',1],['S',1]], src:"#5 R=1;S=1;" },
+    { t:35, a:[['S',0],['R',0]], src:"#5 S=0;R=0;" }
+  ];
+  function tbNuevo(){ return { i:0, st:{R:'x', S:'x', Q:'x', nQ:'x'}, lineas:[], pq:null, pnq:null, aciertos:0, intentos:0, ultimoFb:'' }; }
+  var tb = tbNuevo();
+
+  function tbCode(){
+    var pre = '<span class="kw">module</span> <span class="id">TestRS</span>;\n  <span class="kw">reg</span> R,S;\n  <span class="kw">wire</span> Q,nQ;\n  <span class="id">RS</span> biestable(Q,nQ, R,S);\n\n  <span class="kw">initial</span>\n    <span class="kw">begin</span>\n      $monitor($time," R=%b, S=%b, Q=%b, nQ=%b", R, S, Q, nQ);\n\n';
+    PASOS.forEach(function(p, i){ var l = '      '+(p.t===0 ? '' : '')+p.src; pre += (i===tb.i ? '<span class="hl">'+l+'</span>' : (i<tb.i ? l : '<span style="opacity:.55">'+l+'</span>'))+'\n'; });
+    pre += '    <span class="kw">end</span>\n<span class="kw">endmodule</span>';
+    $('tbcode').innerHTML = pre;
+  }
+  function tbPasos(){
+    $('pasos').innerHTML = PASOS.map(function(p, i){ return '<span class="paso '+(i<tb.i?'hecho':i===tb.i?'actual':'')+'"'+(i===tb.i?' aria-current="step"':'')+'><span class="n">'+(i<tb.i?'✓':(i+1))+'</span>t = '+p.t+'</span>'; }).join('');
+  }
+  function seg(k, etiqueta, sel){ return '<span class="seg" role="group" aria-label="Predicción de '+etiqueta+'">'+[0,1,'x'].map(function(v){ return '<button class="v'+v+'" data-p="'+k+'" data-v="'+v+'" aria-pressed="'+(String(sel)===String(v))+'">'+v+'</button>'; }).join('')+'</span>'; }
+  function tbPred(){
+    var D = $('pred');
+    if (tb.i >= PASOS.length){
+      D.innerHTML = '<div><b>Simulación terminada.</b> Predicciones acertadas: '+tb.aciertos+' de '+tb.intentos+'.</div><div class="pie">Compara t = 25 y t = 35: mismo estado de partida, mismas entradas finales y resultado opuesto. Lo explicamos en la sección siguiente.</div>' + tb.ultimoFb;
+      return;
+    }
+    var p = PASOS[tb.i];
+    D.innerHTML = '<div><span class="etiqueta etiqueta-neutra">Paso '+(tb.i+1)+' · t = '+p.t+'</span></div>'
+      + '<div style="font-size:15px;line-height:22px">Se ejecuta <code>'+p.src+'</code>. Ahora mismo Q = '+tb.st.Q+' y nQ = '+tb.st.nQ+'. ¿Qué valdrán después?</div>'
+      + '<div class="fila-p"><div>Q = '+seg('q','Q',tb.pq)+'</div><div>nQ = '+seg('nq','nQ',tb.pnq)+'</div></div>'
+      + '<div class="fila"><button class="boton boton-primario" id="ejecutar"'+(tb.pq===null||tb.pnq===null?' disabled':'')+'>Comprobar y ejecutar</button><button class="boton boton-discreto" id="saltar">Ejecutar sin predecir</button></div>'
+      + tb.ultimoFb;
+    D.querySelectorAll('.seg button').forEach(function(b){ b.addEventListener('click', function(){ var v = b.dataset.v; tb['p'+b.dataset.p] = v==='x' ? 'x' : +v; tbPred(); }); });
+    $('ejecutar').addEventListener('click', function(){ ejecutar(true); });
+    $('saltar').addEventListener('click', function(){ ejecutar(false); });
+  }
+  function explicar(traza){
+    var cambios = traza.filter(function(e){ return e.tipo==='puerta' && e.cambia; });
+    var asigs = traza.filter(function(e){ return e.tipo==='asig'; });
+    if (!cambios.length){
+      if (traza[traza.length-1].est.Q==='x') return 'Q y nQ siguen en x: nor(0, x) no se puede decidir.';
+      return 'Ninguna puerta cambia de salida: el biestable conserva Q = '+traza[traza.length-1].est.Q+'.';
+    }
+    return cambios.map(textoEvento).join('; ') + '.' + (asigs.length===2 && asigs[0].cambia && asigs[1].cambia ? ' Se aplicó primero <code>'+asigs[0].k+'='+asigs[0].v+'</code> y después <code>'+asigs[1].k+'='+asigs[1].v+'</code>.' : '');
+  }
+  function ejecutar(conPred){
+    var p = PASOS[tb.i], traza = [];
+    p.a.forEach(function(x){ traza = traza.concat(asignar(tb.st, x[0], x[1])); });
+    var s = tb.st;
+    tb.lineas.push(String(p.t).padStart(20,' ')+' R='+s.R+', S='+s.S+', Q='+s.Q+', nQ='+s.nQ);
+    var icono = function(ok){ return '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+(ok?'M3 10l4 4 10-9':'M5 5l10 10M15 5 5 15')+'"/></svg>'; };
+    if (conPred){
+      tb.intentos++;
+      var ok = String(tb.pq)===String(s.Q) && String(tb.pnq)===String(s.nQ);
+      if (ok) tb.aciertos++;
+      var fb = ok ? 'Q = '+s.Q+', nQ = '+s.nQ+'.' : 'Habías dicho Q = '+tb.pq+', nQ = '+tb.pnq+'; la simulación da Q = '+s.Q+', nQ = '+s.nQ+'.';
+      tb.ultimoFb = '<div class="nota '+(ok?'nota-correcto':'nota-incorrecto')+'" role="status" style="max-width:none">'+icono(ok)+'<div><b>t = '+p.t+' · '+(ok?'Correcto':'Incorrecto')+'</b><div class="cuerpo">'+fb+' '+explicar(traza)+'</div></div></div>';
+    } else {
+      tb.ultimoFb = '<div class="nota nota-idea" style="max-width:none"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 16h4"/></svg><div><b>t = '+p.t+'</b><div class="cuerpo">'+explicar(traza)+'</div></div></div>';
+    }
+    tb.i++; tb.pq = null; tb.pnq = null;
+    // reflejar también en el simulador
+    est = copia(s); ultimaTraza = traza; renderSim();
+    tbRender();
+  }
+  function tbRender(){
+    tbCode(); tbPasos(); tbPred();
+    $('consola').innerHTML = tb.lineas.length ? tb.lineas.map(function(l, i){ return '<span class="'+(i===tb.lineas.length-1?'nuevo':'')+'">'+l.replace(/=x/g,'=<span class="x">x</span>')+'</span>'; }).join('\n') : '<span style="opacity:.6">// salida de $monitor</span>';
+  }
+  $('reiniciar').addEventListener('click', function(){ tb = tbNuevo(); tbRender(); });
+  tbRender();
+
+  /* -------- carrera: t = 25 frente a t = 35 -------- */
+  function carrera(id, t, orden){
+    var ini = {R:1, S:1, Q:0, nQ:0}, st = copia(ini), traza = [];
+    orden.forEach(function(x){ traza = traza.concat(asignar(st, x[0], x[1])); });
+    var src = orden.map(function(x){ return x[0]+'='+x[1]+';'; }).join(' '), paso = 0;
+    var C = $(id);
+    function render(){
+      var e = paso ? traza[paso-1] : null, actual = e ? e.est : ini;
+      var resalte = e && e.tipo==='puerta' ? e.g : null, marca = e && e.tipo==='asig' ? e.k : null;
+      var fin = paso===traza.length;
+      C.innerHTML = '<h3>t = '+t+' · <code>'+src+'</code></h3>'
+        + '<div class="escena"><svg viewBox="0 0 560 300" role="img" aria-label="Esquema del biestable en t = '+t+', evento '+paso+' de '+traza.length+'">'+esquema(actual, resalte, marca)+'</svg></div>'
+        + '<p class="lectura">Partimos de R = 1, S = 1, Q = 0, nQ = 0.</p>'
+        + '<ol class="traza">'+traza.slice(0, paso).map(function(ev, i){ return '<li class="'+(ev.tipo==='asig'?'asig':'')+(i===paso-1?' ultimo':'')+'"><span class="n">'+(i+1)+'</span><span>'+textoEvento(ev)+'</span></li>'; }).join('')+'</ol>'
+        + (fin ? '<div class="final">Resultado: Q = '+actual.Q+', nQ = '+actual.nQ+'</div>' : '')
+        + '<div class="fila"><button class="boton '+(fin?'':'boton-primario')+'" data-acc="sig"'+(fin?' disabled':'')+'>Siguiente evento</button><button class="boton boton-discreto" data-acc="rei"'+(paso?'':' disabled')+'>Reiniciar</button></div>';
+      C.querySelector('[data-acc="sig"]').addEventListener('click', function(){ paso++; render(); var b = C.querySelector('[data-acc="sig"]'); (b.disabled ? C.querySelector('[data-acc="rei"]') : b).focus(); });
+      C.querySelector('[data-acc="rei"]').addEventListener('click', function(){ paso = 0; render(); C.querySelector('[data-acc="sig"]').focus(); });
+    }
+    render();
+  }
+  carrera('c25', 25, [['R',0],['S',0]]);
+  carrera('c35', 35, [['S',0],['R',0]]);
+
+  /* -------- pregunta tipo test -------- */
+  var OPC = [
+    { t:'El orden de las dos asignaciones: la entrada que baja primero decide qué puerta saca antes un 1.', ok:true,
+      fb:'Eso es. Las asignaciones bloqueantes se aplican una detrás de otra y cada una propaga sus consecuencias antes de la siguiente. Desde Q = nQ = 0, la primera entrada que baja a 0 decide el resultado.' },
+    { t:'El biestable partía de un estado distinto en t = 20 y en t = 30.', ok:false,
+      fb:'No: en t = 20 y en t = 30 el biestable queda exactamente igual, R = S = 1 y Q = nQ = 0. Compruébalo en la consola del banco de pruebas.' },
+    { t:'Las puertas NOR tienen retardo y el resultado depende de cuál sea más rápida.', ok:false,
+      fb:'En este código las puertas no tienen retardo (no hay #n en las primitivas). La diferencia aparece igual; la causa está en el banco de pruebas, no en las puertas.' },
+    { t:'$monitor imprime los valores antes de que el circuito se estabilice.', ok:false,
+      fb:'$monitor imprime al final del instante de simulación, cuando ya no quedan eventos pendientes; los valores que ves son los estables.' }
+  ];
+  var elegida = null;
+  function renderTest(){
+    $('opciones').innerHTML = OPC.map(function(o, i){ return '<button class="opcion" data-i="'+i+'" aria-pressed="'+(elegida===i)+'">'+o.t+'</button>'; }).join('');
+    $('opciones').querySelectorAll('.opcion').forEach(function(b){ b.addEventListener('click', function(){ elegida = +b.dataset.i; renderTest(); }); });
+    if (elegida===null){ $('fbtest').innerHTML = ''; return; }
+    var o = OPC[elegida];
+    $('fbtest').innerHTML = '<div class="nota '+(o.ok?'nota-correcto':'nota-incorrecto')+'" role="status"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+(o.ok?'M3 10l4 4 10-9':'M5 5l10 10M15 5 5 15')+'"/></svg><div><b>'+(o.ok?'Correcto':'Incorrecto')+'</b><div class="cuerpo">'+o.fb+'</div></div></div>';
+  }
+  renderTest();
+})();
+</script>
+<footer>Computadores I · Grado en Ingeniería Informática · Daniel Hernández de la Iglesia (PB3)<br>Material de prácticas basado en <a href="http://avellano.usal.es/~compi/">la web de la asignatura</a>.</footer>
+</body>
+</html>

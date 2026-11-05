@@ -13,7 +13,7 @@ Abre `index.html` para acceder al índice general. El sitio funciona directament
 - `sesiones/03-puertas-logicas/` — pendiente.
 - `sesiones/04-modulos/` — pendiente.
 - `sesiones/05-encaminadores-sumadores/` — publicada.
-- `sesiones/06-biestables/` — pendiente.
+- `sesiones/06-biestables/` — publicada parcialmente (ejercicio 1).
 - `sesiones/07-registros/` — pendiente.
 - `sesiones/08-contadores/` — pendiente.
 - `sesiones/09-alu/` — pendiente.
