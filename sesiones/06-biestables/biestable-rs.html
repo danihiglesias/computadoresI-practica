@@ -42,6 +42,7 @@ h3 { font-size:20px; line-height:26px; font-weight:600; }
 .cabecera img { width:40px; height:40px; }
 code { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:15px; background:var(--papel-hundido); padding:1px 6px; border-radius:var(--radius-sm); }
 pre { font-family:var(--font-mono); font-size:15px; line-height:24px; background:var(--papel-hundido); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); margin:0; overflow-x:auto; }
+code, pre, .seg button { font-variant-ligatures:none; font-feature-settings:"liga" 0, "calt" 0; }
 pre .kw { color:var(--vitor); font-weight:600; } pre .id { color:var(--centenario); } pre .cm { color:var(--tinta-suave); }
 pre .hl { background:var(--dorado); color:var(--tinta); border-radius:3px; padding:0 2px; }
 pre.consola { background:var(--tinta); color:var(--papel); min-height:60px; font-size:14px; }
@@ -147,7 +148,7 @@ footer{max-width:960px;margin:48px auto 0;font-size:13px;line-height:18px;color:
 </style>
 </head>
 <body>
-<nav class="nav-leccion" aria-label="Navegación de la lección"><a href="index.html">← Índice de la sesión 6</a><span>1</span><span>Siguiente: asignación no bloqueante (próximamente)</span></nav>
+<nav class="nav-leccion" aria-label="Navegación de la lección"><a href="index.html">← Índice de la sesión 6</a><span>1</span><span><a href="asignacion-no-bloqueante.html">Asignación no bloqueante →</a></span></nav>
 <div class="wrap">
 <header class="prosa">
   <div class="cabecera">
@@ -243,7 +244,7 @@ footer{max-width:960px;margin:48px auto 0;font-size:13px;line-height:18px;color:
   <p style="margin-top:var(--space-4)"></p>
   <div class="nota nota-cuidado">
     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
-    <div><b>Cuidado</b><div class="cuerpo">En un circuito real R y S nunca bajan «a la vez» con precisión infinita: el resultado depende de qué señal llegue antes, y eso no se controla. Es una <strong>condición de carrera</strong> y el motivo por el que R = S = 1 se considera una combinación prohibida: lo que viene después es impredecible. En el siguiente punto de la sesión verás la asignación no bloqueante (<code>&lt;=</code>), que cambia precisamente cómo se aplican estas dos asignaciones.</div></div>
+    <div><b>Cuidado</b><div class="cuerpo">En un circuito real R y S nunca bajan «a la vez» con precisión infinita: el resultado depende de qué señal llegue antes, y eso no se controla. Es una <strong>condición de carrera</strong> y el motivo por el que R = S = 1 se considera una combinación prohibida: lo que viene después es impredecible. En el <a href="asignacion-no-bloqueante.html" style="color:inherit">siguiente punto</a> verás la asignación no bloqueante (<code>&lt;=</code>), que cambia precisamente cómo se aplican estas dos asignaciones.</div></div>
   </div>
 </section>
 </div>
