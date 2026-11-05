@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ver las señales con GTKWave</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Lato:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: columna de lectura (68 ch) con simulador y banco de pruebas a ancho completo; tema único claro del sistema Computadores */
+:root {
+  --papel:#f8f4ec; --papel-elevado:#ffffff; --papel-hundido:#efe8db; --piedra:#e3d9c8; --piedra-fuerte:#857869;
+  --tinta:#2a2420; --tinta-suave:#6b5f55;
+  --vitor:#a8192b; --vitor-suave:#f7dddc; --sobre-vitor:#ffffff;
+  --dorado:#d9a441; --dorado-texto:#8a5a0a; --dorado-suave:#fbeed2;
+  --centenario:#385e9d; --centenario-suave:#dde6f4; --sobre-centenario:#ffffff;
+  --correcto:#1f6f43; --correcto-suave:#dcefe2;
+  --incorrecto:var(--vitor); --incorrecto-suave:var(--vitor-suave);
+  --foco:var(--centenario); --diag-bus:var(--tinta-suave);
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
+  --radius-sm:6px; --radius-md:12px; --radius-lg:20px; --radius-pill:999px;
+  --sombra-tarjeta:0 1px 2px rgba(42,36,32,.06), 0 4px 12px rgba(42,36,32,.06);
+  --font-display:"Bricolage Grotesque","Lato",system-ui,sans-serif;
+  --font-sans:"Lato",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme: light;
+}
+* { box-sizing:border-box; }
+body { background:var(--papel); color:var(--tinta); font-family:var(--font-sans); font-size:17px; line-height:27px; margin:0;
+  padding-block:var(--space-6) var(--space-8); padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+.wrap { max-width:960px; margin:0 auto; display:flex; flex-direction:column; gap:var(--space-7); }
+.prosa { max-width:68ch; }
+.prosa p { margin:0 0 var(--space-4); }
+h1,h2,h3 { font-family:var(--font-display); text-wrap:balance; margin:0; }
+h1 { font-size:40px; line-height:44px; font-weight:700; letter-spacing:-.02em; margin:var(--space-2) 0 var(--space-4); }
+h2 { font-size:28px; line-height:34px; font-weight:600; letter-spacing:-.01em; margin-bottom:var(--space-4); display:inline-block; box-shadow:inset 0 -4px 0 var(--dorado); }
+h3 { font-size:20px; line-height:26px; font-weight:600; }
+.etiqueta { display:inline-flex; align-items:center; gap:var(--space-1); font-size:12px; line-height:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px var(--space-2); border-radius:var(--radius-pill); background:var(--vitor-suave); color:var(--vitor); }
+.etiqueta-neutra { background:var(--papel-hundido); color:var(--tinta-suave); }
+.etiqueta-centenario { background:var(--centenario-suave); color:var(--centenario); }
+.cabecera { display:flex; align-items:center; gap:var(--space-3); }
+.cabecera img { width:40px; height:40px; }
+code { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:15px; background:var(--papel-hundido); padding:1px 6px; border-radius:var(--radius-sm); }
+pre { font-family:var(--font-mono); font-size:15px; line-height:24px; background:var(--papel-hundido); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); margin:0; overflow-x:auto; }
+code, pre, .seg button { font-variant-ligatures:none; font-feature-settings:"liga" 0, "calt" 0; }
+pre .kw { color:var(--vitor); font-weight:600; } pre .id { color:var(--centenario); } pre .cm { color:var(--tinta-suave); }
+pre .hl { background:var(--dorado); color:var(--tinta); border-radius:3px; padding:0 2px; }
+pre.consola { background:var(--tinta); color:var(--papel); min-height:60px; font-size:14px; }
+pre.consola .nuevo { background:rgba(217,164,65,.28); }
+pre.consola .x { color:var(--dorado); font-weight:600; }
+
+.nota { display:grid; grid-template-columns:20px 1fr; gap:var(--space-3); padding:var(--space-4); border-radius:var(--radius-md); background:var(--papel-elevado); border:1px solid var(--piedra); font-size:15px; line-height:22px; max-width:68ch; }
+.nota svg { width:20px; height:20px; margin-top:1px; }
+.nota b { display:block; margin-bottom:2px; }
+.nota-idea { background:var(--centenario-suave); border-color:var(--centenario-suave); color:var(--centenario); }
+.nota-cuidado { background:var(--dorado-suave); border-color:var(--dorado-suave); color:var(--dorado-texto); }
+.nota-correcto { background:var(--correcto-suave); border-color:var(--correcto-suave); color:var(--correcto); }
+.nota-incorrecto { background:var(--incorrecto-suave); border-color:var(--incorrecto-suave); color:var(--incorrecto); }
+.nota .cuerpo { color:var(--tinta); }
+
+.panel { background:var(--papel-elevado); border-radius:var(--radius-lg); box-shadow:var(--sombra-tarjeta); padding:var(--space-5); display:flex; flex-direction:column; gap:var(--space-5); }
+.grid2 { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:var(--space-5); align-items:start; }
+.grid2.iguales { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+@media (max-width:720px) { .grid2, .grid2.iguales { grid-template-columns:1fr; } }
+.escena { min-width:0; } .escena svg { width:100%; height:auto; display:block; }
+.derecha { display:flex; flex-direction:column; gap:var(--space-4); min-width:0; }
+
+/* esquema */
+.linea { stroke:var(--diag-bus); stroke-width:3; fill:none; stroke-linecap:round; stroke-linejoin:round; transition:stroke 250ms ease-out; }
+.linea.uno { stroke:var(--vitor); } .linea.cero { stroke:var(--tinta); } .linea.x { stroke:var(--dorado-texto); stroke-dasharray:3 5; }
+.puerta { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2.5; stroke-linejoin:round; transition:fill 250ms ease-out; }
+.puerta.activa { fill:var(--dorado-suave); stroke:var(--dorado-texto); }
+.burbuja { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2.5; }
+.nodo { fill:var(--tinta); }
+.pin { font-family:var(--font-display); font-size:17px; font-weight:600; fill:var(--tinta); }
+.ref { font-family:var(--font-mono); font-size:12px; fill:var(--tinta-suave); }
+.chip { rx:5; }
+.chip.uno { fill:var(--vitor); } .chip.cero { fill:var(--papel-hundido); stroke:var(--piedra); stroke-width:1.5; } .chip.x { fill:var(--dorado); }
+.chip.marca { stroke:var(--dorado-texto); stroke-width:3; }
+.chip-txt { font-family:var(--font-mono); font-size:15px; font-weight:600; }
+.chip-txt.uno { fill:var(--sobre-vitor); } .chip-txt.cero { fill:var(--tinta); } .chip-txt.x { fill:var(--tinta); }
+.caja-mod { fill:none; stroke:var(--piedra-fuerte); stroke-width:1.5; stroke-dasharray:6 5; rx:12; }
+
+/* controles */
+.ctl-grid { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2); }
+@media (max-width:420px) { .ctl-grid { grid-template-columns:1fr; } }
+.fuente { display:grid; grid-template-columns:auto 1fr; gap:var(--space-2); align-items:center; padding:var(--space-2) var(--space-3); border:1px solid var(--piedra); border-radius:var(--radius-md); font-size:15px; }
+.fuente .nombre { font-family:var(--font-mono); font-weight:600; font-size:15px; }
+.fuente .nombre small { display:block; font:400 11px/14px var(--font-sans); color:var(--tinta-suave); letter-spacing:.04em; }
+.seg { display:inline-flex; border:1px solid var(--piedra-fuerte); border-radius:var(--radius-sm); overflow:hidden; justify-self:end; }
+.seg button { font:600 16px/22px var(--font-mono); width:38px; height:38px; border:0; border-left:1px solid var(--piedra); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.seg button:first-child { border-left:0; }
+.seg button[aria-pressed="true"].v0 { background:var(--tinta); color:var(--papel); }
+.seg button[aria-pressed="true"].v1 { background:var(--vitor); color:var(--sobre-vitor); }
+.seg button[aria-pressed="true"].vx { background:var(--dorado); color:var(--tinta); }
+.seg button:focus-visible, .boton:focus-visible, .opcion:focus-visible { outline:2px solid var(--foco); outline-offset:2px; }
+.boton { font:700 15px/20px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.boton-primario { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.boton-discreto { background:transparent; border-color:transparent; color:var(--vitor); }
+.boton:disabled { opacity:.45; cursor:not-allowed; }
+.fila { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; }
+.lectura { font-size:15px; line-height:22px; color:var(--tinta-suave); margin:0; }
+.lectura strong { color:var(--tinta); }
+.modo { display:inline-flex; align-items:center; gap:var(--space-2); font-size:15px; font-weight:700; padding:var(--space-2) var(--space-3); border-radius:var(--radius-pill); }
+.modo.set { background:var(--vitor-suave); color:var(--vitor); } .modo.reset { background:var(--centenario-suave); color:var(--centenario); }
+.modo.mem { background:var(--papel-hundido); color:var(--tinta-suave); } .modo.inv { background:var(--dorado-suave); color:var(--dorado-texto); }
+
+table.tv { border-collapse:collapse; font-family:var(--font-mono); font-size:16px; }
+.tv th { font-family:var(--font-display); font-weight:600; padding:var(--space-2) var(--space-3); border-bottom:2px solid var(--tinta); text-align:center; }
+.tv td { padding:var(--space-2) var(--space-3); text-align:center; border-bottom:1px solid var(--piedra); }
+.tv th:nth-child(3), .tv td:nth-child(3) { border-left:2px solid var(--tinta); }
+.tv th:nth-child(5), .tv td:nth-child(5) { text-align:left; font-family:var(--font-sans); font-size:15px; }
+.tv tr.activa td { background:var(--dorado); font-weight:600; }
+
+/* traza de eventos */
+ol.traza { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:var(--space-2); font-size:15px; line-height:22px; }
+ol.traza li { display:grid; grid-template-columns:24px 1fr; gap:var(--space-2); align-items:start; }
+ol.traza .n { width:22px; height:22px; border-radius:50%; display:inline-grid; place-items:center; font:600 12px var(--font-mono); background:var(--papel-hundido); color:var(--tinta-suave); border:1px solid var(--piedra); margin-top:1px; }
+ol.traza li.asig .n { background:var(--tinta); color:var(--papel); border-color:var(--tinta); }
+ol.traza li.ultimo { background:var(--dorado-suave); border-radius:var(--radius-sm); }
+ol.traza .igual { color:var(--tinta-suave); }
+
+/* banco de pruebas */
+.pasos { display:flex; flex-wrap:wrap; gap:var(--space-1); align-items:center; font-size:14px; }
+.paso { display:inline-flex; align-items:center; gap:6px; padding:3px 10px 3px 3px; border-radius:var(--radius-pill); color:var(--tinta-suave); }
+.paso .n { width:22px; height:22px; border-radius:50%; display:inline-grid; place-items:center; font:600 12px var(--font-mono); background:var(--papel-hundido); color:var(--tinta-suave); border:1px solid var(--piedra); }
+.paso.hecho .n { background:var(--papel-elevado); color:var(--correcto); border-color:var(--correcto); }
+.paso.actual { background:var(--dorado); color:var(--tinta); font-weight:700; }
+.paso.actual .n { background:var(--tinta); color:var(--papel); border-color:var(--tinta); }
+.prediccion { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--piedra); border-radius:var(--radius-md); }
+.prediccion .fila-p { display:flex; flex-wrap:wrap; gap:var(--space-4); align-items:center; }
+.prediccion .fila-p > div { display:flex; align-items:center; gap:var(--space-2); font-family:var(--font-mono); font-weight:600; }
+.pie { font-size:13px; line-height:18px; color:var(--tinta-suave); }
+.resumen { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--space-3); }
+.tarjeta { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); background:var(--papel-elevado); font-size:15px; line-height:22px; }
+.tarjeta code { display:inline-block; margin-bottom:var(--space-2); font-weight:600; color:var(--vitor); }
+.carrera { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-3); min-width:0; }
+.carrera h3 code { font-size:17px; }
+.carrera .final { font-size:15px; font-weight:700; }
+
+/* pregunta tipo test */
+.opciones { display:flex; flex-direction:column; gap:var(--space-2); }
+.opcion { text-align:left; font:400 15px/22px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.opcion[aria-pressed="true"] { border-color:var(--vitor); box-shadow:inset 0 0 0 1px var(--vitor); }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+.nav-leccion{max-width:960px;margin:0 auto var(--space-5);display:flex;justify-content:space-between;gap:var(--space-3);font-size:14px;flex-wrap:wrap}.nav-leccion a{color:var(--centenario)}.nav-leccion span{color:var(--tinta-suave)}
+footer{max-width:960px;margin:48px auto 0;font-size:13px;line-height:18px;color:var(--tinta-suave)}footer a{color:var(--vitor)}
+.terminal .prompt { color:var(--dorado); font-weight:600; }
+pre.vcd { padding:var(--space-2); max-height:520px; overflow:auto; display:flex; flex-direction:column; }
+.vl { display:block; width:100%; text-align:left; font:400 13px/20px var(--font-mono); background:transparent; border:0; border-left:4px solid transparent; padding:0 var(--space-2); color:var(--tinta); cursor:pointer; white-space:pre; }
+.vl:hover { background:var(--papel-elevado); } .vl:focus-visible { outline:2px solid var(--foco); outline-offset:-2px; }
+.vl.sel { background:var(--dorado); }
+.vl .nl { display:inline-block; width:3ch; margin-right:1.5ch; color:var(--tinta-suave); text-align:right; }
+.vl.m-cab { border-left-color:var(--piedra-fuerte); } .vl.m-def { border-left-color:var(--centenario); } .vl.m-ini { border-left-color:var(--dorado); } .vl.m-cam { border-left-color:var(--vitor); }
+.leyenda { display:flex; flex-wrap:wrap; gap:var(--space-3); font-size:13px; color:var(--tinta-suave); }
+.leyenda i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+.leyenda .m-cab { background:var(--piedra-fuerte); } .leyenda .m-def { background:var(--centenario); } .leyenda .m-ini { background:var(--dorado); } .leyenda .m-cam { background:var(--vitor); }
+ol.tareas { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:var(--space-2); font-size:15px; line-height:22px; }
+ol.tareas li { display:grid; grid-template-columns:26px 1fr; gap:var(--space-2); align-items:start; padding:4px 6px; border-radius:var(--radius-sm); color:var(--tinta-suave); }
+ol.tareas .n { width:22px; height:22px; border-radius:50%; display:inline-grid; place-items:center; font:600 12px var(--font-mono); background:var(--papel-hundido); border:1px solid var(--piedra); }
+ol.tareas li.hecha .n { color:var(--correcto); border-color:var(--correcto); background:var(--papel-elevado); }
+ol.tareas li.actual { background:var(--dorado-suave); color:var(--tinta); font-weight:700; } ol.tareas li.actual .n { background:var(--tinta); color:var(--papel); border-color:var(--tinta); }
+ol.tareas li.fin { background:var(--correcto-suave); color:var(--correcto); font-weight:700; }
+.gtk { border:1px solid var(--piedra-fuerte); border-radius:var(--radius-md); overflow:hidden; background:#ecebe8; font-family:var(--font-sans); }
+.gtk-titulo { display:flex; align-items:center; gap:var(--space-3); padding:6px var(--space-3); background:#d9d6d0; font:700 13px var(--font-sans); color:var(--tinta); }
+.gtk-titulo .puntos { display:inline-flex; gap:6px; } .gtk-titulo .puntos i { width:11px; height:11px; border-radius:50%; background:var(--piedra-fuerte); opacity:.6; }
+.gtk-barra { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:6px var(--space-3); border-bottom:1px solid #c9c5bd; }
+.gtk-btn { font:600 13px/18px var(--font-sans); padding:4px 10px; border:1px solid #a9a49b; border-radius:4px; background:#f7f6f3; color:var(--tinta); cursor:pointer; }
+.gtk-btn:hover { background:#fff; } .gtk-btn:focus-visible { outline:2px solid var(--foco); outline-offset:1px; }
+.gtk-btn.primario { background:var(--centenario); border-color:var(--centenario); color:#fff; }
+.gtk-info { margin-left:auto; font:500 12px var(--font-mono); color:var(--tinta-suave); }
+.gtk-cuerpo { display:grid; grid-template-columns:210px minmax(0,1fr); min-height:300px; }
+@media (max-width:720px) { .gtk-cuerpo { grid-template-columns:1fr; } }
+.gtk-izq { border-right:1px solid #c9c5bd; display:flex; flex-direction:column; background:#f3f2ef; }
+.gtk-cab { display:flex; justify-content:space-between; font:700 11px var(--font-sans); letter-spacing:.06em; text-transform:uppercase; color:var(--tinta-suave); padding:6px 10px; background:#e2dfd9; border-bottom:1px solid #c9c5bd; }
+.gtk-der .gtk-cab span:last-child { flex:1; margin-left:120px; }
+.arbol, .lista-sen { list-style:none; margin:0; padding:4px 0; }
+.lista-sen { flex:1; min-height:90px; }
+.nodo-arbol, .sen { display:flex; align-items:center; gap:6px; width:100%; text-align:left; border:0; background:transparent; font:500 14px/22px var(--font-mono); color:var(--tinta); padding:2px 10px; cursor:pointer; }
+.nodo-arbol:hover, .sen:hover { background:#e6e3dd; }
+.nodo-arbol.activo { background:var(--centenario-suave); color:var(--centenario); font-weight:700; }
+.nodo-arbol:focus-visible, .sen:focus-visible { outline:2px solid var(--foco); outline-offset:-2px; }
+.flecha { width:12px; display:inline-block; color:var(--tinta-suave); }
+.sen.on { background:var(--centenario); color:#fff; } .sen .tipo { font-size:11px; color:var(--tinta-suave); width:30px; } .sen.on .tipo { color:#dde6f4; }
+.lista-sen .vacio { padding:6px 10px; font-size:13px; color:var(--tinta-suave); }
+.gtk-acc { padding:8px 10px; border-top:1px solid #c9c5bd; }
+.gtk-der { min-width:0; display:flex; flex-direction:column; }
+.ondas-cont { overflow-x:auto; } .ondas-cont svg { display:block; width:100%; min-width:560px; height:auto; }
+.o-fondo { fill:#1f1d1b; } .o-nombres { fill:#f7f6f3; } .o-sep { stroke:#a9a49b; stroke-width:1; }
+.o-rejilla { stroke:#3a3632; stroke-width:1; } .o-regla { font:500 11px var(--font-mono); fill:#cfc9bf; }
+.o-nombre { font:600 13px var(--font-mono); fill:var(--tinta); } .o-val { fill:var(--vitor); font-weight:700; }
+.o-traza { fill:none; stroke:#6fd38a; stroke-width:1.8; } .o-x { fill:rgba(217,90,90,.35); stroke:#e07070; stroke-width:1; }
+.o-cursor { stroke:#ff5a5a; stroke-width:1.5; } .o-clic { fill:transparent; cursor:crosshair; }
+.o-vacio { font:500 13px var(--font-sans); fill:#cfc9bf; }
+</style>
+</head>
+<body>
+<nav class="nav-leccion" aria-label="Navegación de la lección"><a href="index.html">← Índice de la sesión 6</a><span>5</span><span><a href="senal-reloj-always.html">← Señal de reloj y bloque always</a></span></nav>
+<div class="wrap">
+<header class="prosa">
+  <div class="cabecera">
+    <img alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%236b5f55'%3E%3Crect x='18' y='2' width='4' height='8' rx='1'/%3E%3Crect x='30' y='2' width='4' height='8' rx='1'/%3E%3Crect x='42' y='2' width='4' height='8' rx='1'/%3E%3Crect x='18' y='54' width='4' height='8' rx='1'/%3E%3Crect x='30' y='54' width='4' height='8' rx='1'/%3E%3Crect x='42' y='54' width='4' height='8' rx='1'/%3E%3Crect x='2' y='18' width='8' height='4' rx='1'/%3E%3Crect x='2' y='30' width='8' height='4' rx='1'/%3E%3Crect x='2' y='42' width='8' height='4' rx='1'/%3E%3Crect x='54' y='18' width='8' height='4' rx='1'/%3E%3Crect x='54' y='30' width='8' height='4' rx='1'/%3E%3Crect x='54' y='42' width='8' height='4' rx='1'/%3E%3C/g%3E%3Crect x='8' y='8' width='48' height='48' rx='12' fill='%23a8192b'/%3E%3Crect x='16' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='25' y='24' width='7' height='16' rx='2' fill='%23f7dddc' fill-opacity='.35'/%3E%3Crect x='34' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='43' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3C/svg%3E">
+    <span class="etiqueta">Computadores · Lógica digital · Ejercicio</span>
+  </div>
+  <h1>Ver las señales con GTKWave</h1>
+  <p><strong>Enunciado del ejercicio:</strong> añadir un bloque <code>always</code> a las pruebas del ejercicio anterior para generar una señal de reloj de periodo 14 unidades de tiempo, y observar que el biestable solo reacciona a R y S cuando el reloj está en alto.</p>
+  <p>Con <code>$monitor</code> obtenemos una lista de 23 líneas. Se puede leer, pero cuesta ver de un vistazo cuándo está el reloj en alto y qué hace Q mientras tanto. Para eso existen los <strong>visores de formas de onda</strong>. El simulador escribe en un fichero todos los cambios de las señales, y un programa como <strong>GTKWave</strong> los dibuja como un cronograma.</p>
+</header>
+
+<section>
+  <h2>Paso 1 · Pedir el volcado en el banco de pruebas</h2>
+  <div class="prosa"><p>Basta con añadir dos tareas del sistema al principio del bloque <code>initial</code>. Estas son las líneas resaltadas en el banco de pruebas del ejercicio 5:</p></div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="derecha"><pre id="tb"></pre></div>
+      <div class="derecha">
+        <div class="tarjeta"><code>$dumpfile("salida.dmp");</code><br>Nombre del fichero donde se escribirá el volcado. El formato es siempre <strong>VCD</strong> (<em>Value Change Dump</em>), aunque la extensión sea <code>.dmp</code>; también es habitual <code>.vcd</code>.</div>
+        <div class="tarjeta"><code>$dumpvars;</code><br>Empieza a volcar. Sin argumentos, vuelca <strong>todas</strong> las variables de <strong>todos</strong> los módulos, incluidos los cables internos como <code>arriba</code> y <code>abajo</code>. Con <code>$dumpvars(1, biestableRSTest);</code> se limitaría al primer nivel.</div>
+        <div class="tarjeta"><code>$dumpoff;</code><br>Suspende el volcado. Al hacerlo, Icarus marca todas las señales como <code>x</code> en ese instante (t = 75). Aquí, justo antes de <code>$finish</code>, no es necesario: el volcado se cierra solo al terminar.</div>
+        <div class="tarjeta"><code>always #7 C=~C;</code><br>El reloj del ejercicio. <code>C=1;</code> al principio del <code>initial</code> le da su valor de partida; sin él, C se quedaría en x.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Paso 2 · Simular y abrir el fichero</h2>
+  <div class="prosa"><p>Se compila y se simula como siempre. La única novedad es el aviso <code>VCD info</code> al empezar, que confirma que se ha creado el fichero. Después se abre GTKWave pasándole ese fichero:</p></div>
+  <pre class="consola terminal" id="terminal"></pre>
+  <div class="prosa" style="margin-top:var(--space-4)">
+    <div class="nota">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 6v.5"/></svg>
+      <div><b>Si no tienes GTKWave</b><div class="cuerpo">En los equipos del laboratorio ya está instalado. En Linux suele bastar con instalar el paquete <code>gtkwave</code> de la distribución, y el instalador de Icarus Verilog para Windows ofrece instalarlo junto al simulador. El fichero <code>salida.dmp</code> se genera igual aunque no tengas el visor.</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>El fichero de volcado por dentro</h2>
+  <div class="prosa"><p>Un VCD es texto plano: no hace falta para usar GTKWave, pero ayuda a entender qué dibuja. Este es el fichero real que genera el ejercicio 5. <strong>Haz clic en cualquier línea</strong> para ver qué significa.</p></div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="derecha"><pre class="vcd" id="vcd-ver" role="group" aria-label="Contenido de salida.dmp"></pre></div>
+      <div class="derecha">
+        <div class="leyenda">
+          <span><i class="m-cab"></i>Cabecera</span><span><i class="m-def"></i>Definiciones</span><span><i class="m-ini"></i>Valores iniciales</span><span><i class="m-cam"></i>Cambios</span>
+        </div>
+        <div id="vcd-exp" aria-live="polite"></div>
+        <div class="tarjeta"><b>Un mismo cable, varios nombres.</b> <code>Q</code> del banco de pruebas, <code>Q</code> de <code>b</code> y <code>Q</code> de <code>b1</code> comparten el identificador <code>!</code>: son el mismo cable visto desde tres módulos. Por eso el fichero solo apunta sus cambios una vez.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Paso 3 · Manejar GTKWave</h2>
+  <div class="prosa"><p>Al abrir el fichero, la ventana de ondas aparece vacía: hay que elegir qué señales dibujar. Esta es una reproducción simplificada de la ventana de GTKWave, que funciona con los datos de <code>salida.dmp</code>. Sigue las tareas de la lista; se marcan solas.</p></div>
+  <div class="panel">
+    <ol class="tareas" id="tareas"></ol>
+    <div class="gtk" id="gtk">
+      <div class="gtk-titulo"><span class="puntos" aria-hidden="true"><i></i><i></i><i></i></span>GTKWave · salida.dmp</div>
+      <div class="gtk-barra" role="toolbar" aria-label="Zoom y desplazamiento">
+        <button class="gtk-btn" id="z-fit" title="Ver toda la simulación">Zoom Fit</button>
+        <button class="gtk-btn" id="z-in" title="Acercar">Zoom +</button>
+        <button class="gtk-btn" id="z-out" title="Alejar">Zoom −</button>
+        <button class="gtk-btn" id="p-izq" title="Desplazar a la izquierda" aria-label="Desplazar a la izquierda">◀</button>
+        <button class="gtk-btn" id="p-der" title="Desplazar a la derecha" aria-label="Desplazar a la derecha">▶</button>
+        <span class="gtk-info" id="gtk-info"></span>
+      </div>
+      <div class="gtk-cuerpo">
+        <div class="gtk-izq">
+          <div class="gtk-cab">SST</div>
+          <ul class="arbol" id="arbol" role="tree" aria-label="Jerarquía de módulos"></ul>
+          <div class="gtk-cab">Señales del módulo</div>
+          <ul class="lista-sen" id="lista-sen" aria-label="Señales del módulo seleccionado"></ul>
+          <div class="fila gtk-acc"><button class="gtk-btn primario" id="append">Append</button><button class="gtk-btn" id="limpiar">Vaciar ondas</button></div>
+        </div>
+        <div class="gtk-der">
+          <div class="gtk-cab"><span>Signals</span><span>Waves</span></div>
+          <div class="ondas-cont"><svg id="ondas" role="img" aria-label="Formas de onda de las señales añadidas"></svg></div>
+        </div>
+      </div>
+    </div>
+    <p class="lectura" id="gtk-lectura"></p>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Lee el cronograma</h2>
+  <p>Con todas las señales en pantalla y el zoom ajustado, responde mirando las ondas. Puedes mover el cursor para comprobar los valores.</p>
+  <div id="retos" style="display:flex;flex-direction:column;gap:var(--space-6)"></div>
+  <p class="pie" style="margin-top:var(--space-4)">Las respuestas se corrigen en la página; nada se envía a ningún sitio.</p>
+</section>
+
+<section class="prosa">
+  <h2>Qué conviene saber</h2>
+  <div class="nota nota-idea">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 16h4"/></svg>
+    <div><b>Lo que enseña el ejercicio</b><div class="cuerpo">Mira <code>arriba</code> y <code>abajo</code> junto a C: solo pueden valer 1 mientras el reloj está en alto. Por ejemplo, en t = 55 R pasa a 1 con el reloj en bajo y Q no se inmuta; en t = 56 sube el reloj y Q cae a 0. El biestable es <strong>activo por nivel alto</strong> de reloj.</div></div>
+  </div>
+  <p style="margin-top:var(--space-4)"></p>
+  <div class="nota nota-cuidado">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
+    <div><b>Vuelve a cargar después de simular</b><div class="cuerpo">GTKWave no se entera de que has vuelto a simular. Si cambias el código y ejecutas <code>vvp</code> de nuevo, recarga el fichero desde el menú <em>File</em> (<em>Reload Waveform</em>) en lugar de cerrar y abrir. Así no pierdes las señales que tenías añadidas. Para conservarlas entre sesiones, guarda la vista con <em>File → Write Save File</em>: se crea un fichero <code>.gtkw</code> que puedes abrir junto al volcado (<code>gtkwave salida.dmp vista.gtkw</code>).</div></div>
+  </div>
+  <p style="margin-top:var(--space-4)"></p>
+  <div class="nota">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 6v.5"/></svg>
+    <div><b>$monitor y GTKWave se complementan</b><div class="cuerpo"><code>$monitor</code> sirve para comprobar valores exactos y para que el corrector lea la salida. El cronograma, para entender el comportamiento en el tiempo. Puedes usar los dos a la vez, como en este ejercicio.</div></div>
+  </div>
+</section>
+</div>
+
+<script type="text/plain" id="vcd-datos">
+$date
+	Thu Nov  5 08:57:15 2026
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1s
+$end
+$scope module biestableRSTest $end
+$var wire 1 ! Q $end
+$var wire 1 " NQ $end
+$var reg 1 # C $end
+$var reg 1 $ R $end
+$var reg 1 % S $end
+$scope module b $end
+$var wire 1 # C $end
+$var wire 1 $ R $end
+$var wire 1 % S $end
+$var wire 1 & abajo $end
+$var wire 1 ' arriba $end
+$var wire 1 " Qn $end
+$var wire 1 ! Q $end
+$scope module b1 $end
+$var wire 1 ! Q $end
+$var wire 1 " Qn $end
+$var wire 1 ' R $end
+$var wire 1 & S $end
+$upscope $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+$end
+#0
+$dumpvars
+0'
+0&
+0%
+0$
+1#
+x"
+x!
+$end
+#5
+1!
+0"
+1&
+1%
+#7
+0&
+0#
+#10
+0%
+#14
+1#
+#15
+1"
+0!
+1'
+1$
+#20
+0"
+1&
+1%
+#21
+1"
+0'
+0&
+0#
+#25
+0%
+0$
+#28
+1#
+#30
+0"
+1&
+1'
+1%
+1$
+#35
+1"
+0'
+0&
+0$
+0%
+0#
+#42
+1#
+#45
+1!
+0"
+1&
+1%
+#49
+0&
+0#
+#50
+0%
+#55
+1$
+#56
+1"
+0!
+1'
+1#
+#60
+0"
+1&
+1%
+#63
+1"
+0'
+0&
+0#
+#65
+0%
+0$
+#70
+0"
+1'
+1&
+1%
+1$
+1#
+#75
+$dumpoff
+x'
+x&
+x%
+x$
+x#
+x"
+x!
+$end
+0$
+0%
+</script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var esc = function(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  var VCD = $('vcd-datos').textContent.replace(/^\n/,'').replace(/\s+$/,'');
+
+  /* -------- banco de pruebas y terminal -------- */
+  var TB = ['<span class="kw">module</span> <span class="id">biestableRSTest</span>;','','<span class="kw">reg</span> R,S,C;','<span class="kw">wire</span> Q,NQ;','','<span class="id">BiestableRSC</span> b(Q,NQ,R,S,C);','','<span class="kw">always</span> #7 C=~C;','','<span class="kw">initial</span>','<span class="kw">begin</span>',
+    '  <span class="hl">$dumpfile("salida.dmp");</span>','  <span class="hl">$dumpvars;</span>','','  C=1;','  $monitor($time," C=%b, R=%b, S=%b, Q=%b, NQ=%b",C, R, S, Q, NQ);','  R=0; S=0;','  #5 R=0; S=1;','  #5 R=0; S=0;','  <span class="cm">… (la misma batería dos veces) …</span>','  #5 S=0; R=0;','','  <span class="hl">$dumpoff;</span>','  $finish;','<span class="kw">end</span>','<span class="kw">endmodule</span>'];
+  $('tb').innerHTML = TB.join('\n');
+  var SALIDA = ["                   0 C=1, R=0, S=0, Q=x, NQ=x", "                   5 C=1, R=0, S=1, Q=1, NQ=0", "                   7 C=0, R=0, S=1, Q=1, NQ=0", "                  10 C=0, R=0, S=0, Q=1, NQ=0", "                  14 C=1, R=0, S=0, Q=1, NQ=0", "                  15 C=1, R=1, S=0, Q=0, NQ=1", "                  20 C=1, R=1, S=1, Q=0, NQ=0", "                  21 C=0, R=1, S=1, Q=0, NQ=1", "                  25 C=0, R=0, S=0, Q=0, NQ=1", "                  28 C=1, R=0, S=0, Q=0, NQ=1", "                  30 C=1, R=1, S=1, Q=0, NQ=0", "                  35 C=0, R=0, S=0, Q=0, NQ=1", "                  42 C=1, R=0, S=0, Q=0, NQ=1", "                  45 C=1, R=0, S=1, Q=1, NQ=0", "                  49 C=0, R=0, S=1, Q=1, NQ=0", "                  50 C=0, R=0, S=0, Q=1, NQ=0", "                  55 C=0, R=1, S=0, Q=1, NQ=0", "                  56 C=1, R=1, S=0, Q=0, NQ=1", "                  60 C=1, R=1, S=1, Q=0, NQ=0", "                  63 C=0, R=1, S=1, Q=0, NQ=1", "                  65 C=0, R=0, S=0, Q=0, NQ=1", "                  70 C=1, R=1, S=1, Q=0, NQ=0", "ejercicio5.v:53: $finish called at 75 (1s)", "                  75 C=1, R=0, S=0, Q=0, NQ=1"];
+  $('terminal').innerHTML = '<span class="prompt">$</span> iverilog -o ejercicio5 ejercicio5.v\n<span class="prompt">$</span> vvp ejercicio5\n<span class="nuevo">VCD info: dumpfile salida.dmp opened for output.</span>\n' + SALIDA.map(esc).join('\n').replace(/=x/g,'=<span class="x">x</span>') + '\n<span class="prompt">$</span> gtkwave salida.dmp';
+
+  /* -------- análisis del VCD -------- */
+  var lineas = VCD.split('\n'), vars = [], cambios = {}, ids = {}, tFin = 0;
+  var arbol = { nombre:'', hijos:[], vars:[], ruta:'' }, pila = [arbol], enDef = true, t = 0, zona = [];
+  var bloque = null;
+  lineas.forEach(function(l, i){
+    var s = l.trim(), z;
+    if (enDef){
+      if (/^\$(date|version|timescale)/.test(s)) bloque = 'cab';
+      z = bloque==='cab' ? 'cab' : 'def';
+      var m;
+      if ((m = s.match(/^\$scope module (\S+) \$end/))){ var nodo = { nombre:m[1], hijos:[], vars:[], ruta:(pila[pila.length-1].ruta ? pila[pila.length-1].ruta+'.' : '')+m[1] }; pila[pila.length-1].hijos.push(nodo); pila.push(nodo); bloque = 'def'; z = 'def'; }
+      else if ((m = s.match(/^\$var (\S+) (\d+) (\S+) (\S+) \$end/))){ var v = { tipo:m[1], id:m[3], nombre:m[4], ruta:pila[pila.length-1].ruta }; pila[pila.length-1].vars.push(v); vars.push(v); ids[m[3]] = ids[m[3]] || []; ids[m[3]].push(v); cambios[m[3]] = cambios[m[3]] || []; z = 'def'; }
+      else if (/^\$upscope/.test(s)){ pila.pop(); z = 'def'; }
+      else if (/^\$enddefinitions/.test(s)){ enDef = false; z = 'def'; bloque = null; }
+      else if (/^\$end$/.test(s) && bloque==='cab'){ z = 'cab'; }
+      zona.push(z); return;
+    }
+    if (/^\$comment|^\$dumpall/.test(s)){ zona.push('def'); bloque = 'com'; return; }
+    if (s[0]==='#'){ t = +s.slice(1); tFin = Math.max(tFin, t); zona.push(t===0 ? 'ini' : 'cam'); bloque = t===0 ? 'ini' : 'cam'; return; }
+    if (/^\$dumpvars/.test(s)){ zona.push('ini'); return; }
+    if (/^\$dumpoff/.test(s)){ zona.push('cam'); return; }
+    if (/^\$end/.test(s)){ zona.push(bloque==='com' ? 'def' : t===0 ? 'ini' : 'cam'); return; }
+    var mv = s.match(/^([01xz])(.+)$/);
+    if (mv && cambios[mv[2]]){ cambios[mv[2]].push([t, mv[1]==='0'||mv[1]==='1' ? +mv[1] : mv[1]]); }
+    zona.push(t===0 ? 'ini' : 'cam');
+  });
+  var raiz = arbol.hijos[0];
+  function valor(id, tt){ var c = cambios[id], v = 'x'; for (var i=0;i<c.length && c[i][0]<=tt;i++) v = c[i][1]; return v; }
+  var nombreId = function(id){ return ids[id].map(function(v){ return v.ruta.split('.').slice(1).concat(v.nombre).join('.') || v.nombre; })[0]; };
+
+  /* -------- visor del VCD con explicación -------- */
+  var tAct = 0, defActual = '';
+  function explicar(i){
+    var s = lineas[i].trim(), m, tt = 0;
+    for (var k=i; k>=0; k--){ var h = lineas[k].trim(); if (h[0]==='#'){ tt = +h.slice(1); break; } }
+    if (/^\$date/.test(s) || (zona[i]==='cab' && i<3)) return ['Cabecera','Fecha en que se generó el fichero.'];
+    if (/^\$version/.test(s) || /Icarus/.test(s)) return ['Cabecera','Programa que ha escrito el volcado: Icarus Verilog.'];
+    if (/^\$timescale/.test(s) || /^1s$/.test(s)) return ['Cabecera','Unidad de tiempo. El código no tiene directiva <code>`timescale</code>, así que Icarus usa 1 s por defecto: cada unidad de <code>#5</code> cuenta como 1 segundo. Para la simulación da igual; solo cambia la etiqueta del eje de tiempos.'];
+    if ((m = s.match(/^\$scope module (\S+)/))) return ['Definiciones','Empieza el módulo (o instancia) <code>'+m[1]+'</code>. Las variables que siguen hasta su <code>$upscope</code> le pertenecen. Esto es lo que GTKWave muestra como árbol en el panel SST.'];
+    if (/^\$upscope/.test(s)) return ['Definiciones','Se cierra el módulo actual y se vuelve al de arriba.'];
+    if ((m = s.match(/^\$var (\S+) (\d+) (\S+) (\S+)/))) return ['Definiciones','Declara la señal <code>'+m[4]+'</code> ('+m[1]+', '+m[2]+' bit) y le asigna el identificador corto <code>'+esc(m[3])+'</code>. A partir de aquí, sus cambios se escriben con ese identificador'+(ids[m[3]].length>1 ? '. Este identificador lo comparten '+ids[m[3]].length+' declaraciones: es el mismo cable en varios módulos.' : '.')];
+    if (/^\$enddefinitions/.test(s)) return ['Definiciones','Fin de las declaraciones. Lo que sigue son valores.'];
+    if (/^\$comment|^\$dumpall/.test(s)) return ['Definiciones','Comentarios y marcas que escribe Icarus; GTKWave los ignora.'];
+    if (s[0]==='#') return [ +s.slice(1)===0 ? 'Valores iniciales' : 'Cambios', 'Marca de tiempo: las líneas siguientes ocurren en <strong>t = '+s.slice(1)+'</strong>.'];
+    if (/^\$dumpvars/.test(s)) return ['Valores iniciales','Bloque con el valor de partida de todas las señales, escrito al ejecutarse <code>$dumpvars</code> en t = 0.'];
+    if (/^\$dumpoff/.test(s)) return ['Cambios','Aquí se ejecuta <code>$dumpoff</code> (t = 75): Icarus escribe todas las señales como x. Después aparecen los cambios de R y S de esa misma línea.'];
+    if (/^\$end/.test(s)) return ['', 'Cierra el bloque abierto antes.'];
+    if ((m = s.match(/^([01xz])(.+)$/)) && ids[m[2]]) return [tt===0 ? 'Valores iniciales' : 'Cambios', '<code>'+esc(s)+'</code>: en t = '+tt+', <strong>'+ids[m[2]].map(function(v){ return v.ruta.split('.').slice(1).concat(v.nombre).join('.'); }).join(' = ')+'</strong> pasa a valer <strong>'+m[1]+'</strong>. El primer carácter es el valor y el resto, el identificador.'];
+    return ['', 'Línea del fichero.'];
+  }
+  var sel = null;
+  function renderVCD(){
+    $('vcd-ver').innerHTML = lineas.map(function(l, i){ return '<button class="vl m-'+zona[i]+(sel===i?' sel':'')+'" data-i="'+i+'"><span class="nl">'+(i+1)+'</span>'+(esc(l.replace(/\t/g,'  '))||' ')+'</button>'; }).join('');
+    $('vcd-ver').querySelectorAll('.vl').forEach(function(b){ b.addEventListener('click', function(){ sel = +b.dataset.i; renderVCD(); var nb = $('vcd-ver').querySelector('.vl.sel'); if (nb) nb.focus(); }); });
+    if (sel===null) $('vcd-exp').innerHTML = '<div class="nota nota-idea" style="max-width:none"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 16h4"/></svg><div><b>Elige una línea</b><div class="cuerpo">El fichero solo apunta <strong>cambios</strong>: si una señal no aparece en un instante, conserva su valor anterior. Por eso es mucho más corto que la salida de $monitor multiplicada por todas las señales.</div></div></div>';
+    else { var e = explicar(sel); $('vcd-exp').innerHTML = '<div class="nota" style="max-width:none"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 6v.5"/></svg><div><b>Línea '+(sel+1)+(e[0]?' · '+e[0]:'')+'</b><div class="cuerpo">'+e[1]+'</div></div></div>'; }
+  }
+  renderVCD();
+
+  /* -------- ventana de GTKWave -------- */
+  var g = { abiertos:{}, ambito:null, marcadas:[], ondas:[], v0:0, v1:24, cursor:null, hechoFit:false };
+  g.abiertos[raiz.ruta] = false;
+  function nodoPorRuta(r){ var f = null; (function rec(n){ if (n.ruta===r) f = n; n.hijos.forEach(rec); })(raiz); return f; }
+  function renderArbol(){
+    var h = '';
+    (function rec(n, nivel){
+      var tiene = n.hijos.length>0, ab = g.abiertos[n.ruta];
+      h += '<li role="treeitem" aria-level="'+(nivel+1)+'"'+(tiene?' aria-expanded="'+!!ab+'"':'')+' aria-selected="'+(g.ambito===n.ruta)+'"><button class="nodo-arbol'+(g.ambito===n.ruta?' activo':'')+'" data-r="'+n.ruta+'" style="padding-left:'+(8+nivel*16)+'px"><span class="flecha">'+(tiene?(ab?'▾':'▸'):'·')+'</span>'+n.nombre+'</button></li>';
+      if (tiene && ab) n.hijos.forEach(function(c){ rec(c, nivel+1); });
+    })(raiz, 0);
+    $('arbol').innerHTML = h;
+    $('arbol').querySelectorAll('.nodo-arbol').forEach(function(b){ b.addEventListener('click', function(){ var r = b.dataset.r; if (g.ambito===r || !g.abiertos[r]) g.abiertos[r] = !g.abiertos[r]; g.ambito = r; g.marcadas = []; renderGTK(); }); });
+  }
+  function renderLista(){
+    var L = $('lista-sen');
+    if (!g.ambito){ L.innerHTML = '<li class="vacio">Selecciona un módulo en el árbol.</li>'; return; }
+    var n = nodoPorRuta(g.ambito);
+    L.innerHTML = n.vars.map(function(v, i){ var on = g.marcadas.indexOf(i)>=0; return '<li><button class="sen'+(on?' on':'')+'" data-i="'+i+'" aria-pressed="'+on+'"><span class="tipo">'+v.tipo+'</span>'+v.nombre+'</button></li>'; }).join('');
+    L.querySelectorAll('.sen').forEach(function(b){ b.addEventListener('click', function(){ var i = +b.dataset.i, k = g.marcadas.indexOf(i); if (k>=0) g.marcadas.splice(k,1); else g.marcadas.push(i); renderGTK(); }); });
+  }
+  function renderOndas(){
+    var S = $('ondas'), filas = g.ondas.length, AN = 640, IZQ = 150, FH = 30, ARR = 26, H = ARR + Math.max(filas,1)*FH + 8;
+    S.setAttribute('viewBox','0 0 '+AN+' '+H);
+    var X = function(tt){ return IZQ + 18 + (tt-g.v0)*((AN-IZQ-36)/(g.v1-g.v0)); };
+    var h = '<rect class="o-fondo" x="'+IZQ+'" y="0" width="'+(AN-IZQ)+'" height="'+H+'"/><rect class="o-nombres" x="0" y="0" width="'+IZQ+'" height="'+H+'"/>';
+    // regla de tiempos
+    var paso = (g.v1-g.v0)>40 ? 10 : (g.v1-g.v0)>16 ? 5 : 2;
+    for (var tt=Math.ceil(g.v0/paso)*paso; tt<=g.v1; tt+=paso){ h += '<line class="o-rejilla" x1="'+X(tt)+'" y1="'+(ARR-4)+'" x2="'+X(tt)+'" y2="'+H+'"/><text class="o-regla" x="'+X(tt)+'" y="'+(ARR-9)+'" text-anchor="middle">'+tt+' s</text>'; }
+    h += '<line class="o-sep" x1="'+IZQ+'" y1="0" x2="'+IZQ+'" y2="'+H+'"/>';
+    if (!filas) h += '<text class="o-vacio" x="'+(IZQ+20)+'" y="'+(ARR+20)+'">Sin señales: añade alguna con Append</text>';
+    g.ondas.forEach(function(o, f){
+      var y0 = ARR + f*FH, yA = y0+6, yB = y0+FH-6, c = cambios[o.id];
+      var vc = g.cursor===null ? '' : '='+valor(o.id, g.cursor);
+      h += '<text class="o-nombre" x="8" y="'+(y0+FH/2+5)+'">'+o.nombre+'<tspan class="o-val">'+vc+'</tspan></text>';
+      // tramos visibles
+      var pts = [], vAnt = valor(o.id, g.v0), tIni = g.v0;
+      c.forEach(function(cc){ if (cc[0]>g.v0 && cc[0]<=g.v1){ pts.push([tIni, cc[0], vAnt]); vAnt = cc[1]; tIni = cc[0]; } });
+      pts.push([tIni, Math.min(g.v1, tFin), vAnt]);
+      var d = '', prev = null;
+      pts.forEach(function(p){
+        if (p[1] < p[0]) return;
+        if (p[2]==='x' || p[2]==='z'){ h += '<rect class="o-x" x="'+X(p[0])+'" y="'+yA+'" width="'+Math.max(1.5, X(p[1])-X(p[0]))+'" height="'+(yB-yA)+'"/>'; prev = null; return; }
+        var y = p[2]===1 ? yA : yB;
+        d += (prev===null ? ' M'+X(p[0])+' '+y : ' L'+X(p[0])+' '+y) + ' L'+X(p[1])+' '+y; prev = y;
+      });
+      if (d) h += '<path class="o-traza" d="'+d+'"/>';
+      h += '<line class="o-rejilla" x1="0" y1="'+(y0+FH)+'" x2="'+AN+'" y2="'+(y0+FH)+'"/>';
+    });
+    if (g.cursor!==null && g.cursor>=g.v0 && g.cursor<=g.v1) h += '<line class="o-cursor" x1="'+X(g.cursor)+'" y1="0" x2="'+X(g.cursor)+'" y2="'+H+'"/>';
+    h += '<rect class="o-clic" x="'+IZQ+'" y="0" width="'+(AN-IZQ)+'" height="'+H+'"/>';
+    S.innerHTML = h;
+    var clic = S.querySelector('.o-clic');
+    clic.addEventListener('click', function(ev){
+      var r = S.getBoundingClientRect(), x = (ev.clientX - r.left) * (AN / r.width);
+      var tt = g.v0 + (x - IZQ - 18) / ((AN-IZQ-36)/(g.v1-g.v0));
+      g.cursor = Math.max(0, Math.min(tFin, Math.round(tt))); renderGTK();
+    });
+  }
+  function renderInfo(){
+    $('gtk-info').textContent = 'De '+Math.round(g.v0)+' s a '+Math.round(g.v1)+' s' + (g.cursor===null ? '' : ' · Cursor: '+g.cursor+' s');
+    var t2;
+    if (!g.ondas.length) t2 = 'La ventana de ondas está vacía. Despliega <code>biestableRSTest</code> en el panel SST, elige un módulo, marca señales en la lista y pulsa <strong>Append</strong>.';
+    else if (g.cursor===null) t2 = 'Haz clic sobre las ondas para colocar el cursor: junto a cada nombre aparece su valor en ese instante.';
+    else t2 = 'En t = '+g.cursor+': '+g.ondas.map(function(o){ return o.nombre+' = '+valor(o.id, g.cursor); }).join(', ')+'.';
+    $('gtk-lectura').innerHTML = t2;
+  }
+  var TAREAS = [
+    ['Despliega <code>biestableRSTest</code> y selecciona el módulo <code>b</code> en el panel SST.', function(){ return g.ambito==='biestableRSTest.b' || tareaHecha[0]; }],
+    ['Añade <code>C</code>, <code>R</code> y <code>S</code> a las ondas.', function(){ return ['#','$','%'].every(tiene); }],
+    ['Añade los cables internos <code>arriba</code> y <code>abajo</code>.', function(){ return ["'",'&'].every(tiene); }],
+    ['Añade las salidas <code>Q</code> y <code>NQ</code> (o <code>Qn</code>, que es el mismo cable).', function(){ return ['!','"'].every(tiene); }],
+    ['Pulsa <strong>Zoom Fit</strong> para ver la simulación entera.', function(){ return g.hechoFit; }],
+    ['Coloca el cursor en t = 55 y compara con t = 56.', function(){ return g.cursor===55 || g.cursor===56 || tareaHecha[5]; }]
+  ];
+  var tareaHecha = TAREAS.map(function(){ return false; });
+  function tiene(id){ return g.ondas.some(function(o){ return o.id===id; }); }
+  function renderTareas(){
+    TAREAS.forEach(function(tk, i){ if (!tareaHecha[i] && tk[1]()) tareaHecha[i] = true; });
+    var act = tareaHecha.indexOf(false);
+    $('tareas').innerHTML = TAREAS.map(function(tk, i){ return '<li class="'+(tareaHecha[i]?'hecha':i===act?'actual':'')+'"><span class="n">'+(tareaHecha[i]?'✓':(i+1))+'</span><span>'+tk[0]+'</span></li>'; }).join('')
+      + (act<0 ? '<li class="fin"><span class="n">★</span><span>¡Listo! Ya tienes la vista completa. En t = 55 R sube con el reloj en bajo y Q no cambia; en t = 56 sube el reloj y Q cae a 0.</span></li>' : '');
+  }
+  function renderGTK(){ renderArbol(); renderLista(); renderOndas(); renderInfo(); renderTareas(); }
+  $('append').addEventListener('click', function(){
+    if (!g.ambito) return;
+    var n = nodoPorRuta(g.ambito);
+    g.marcadas.sort(function(a,b){ return a-b; }).forEach(function(i){ var v = n.vars[i]; if (!g.ondas.some(function(o){ return o.id===v.id && o.nombre===v.nombre; })) g.ondas.push({ id:v.id, nombre:v.nombre }); });
+    g.marcadas = []; renderGTK();
+  });
+  $('limpiar').addEventListener('click', function(){ g.ondas = []; renderGTK(); });
+  var centro = function(){ return g.cursor!==null ? g.cursor : (g.v0+g.v1)/2; };
+  function ventana(c, ancho){ ancho = Math.max(6, Math.min(tFin, ancho)); var a = c - ancho/2; a = Math.max(0, Math.min(tFin-ancho, a)); g.v0 = a; g.v1 = a+ancho; }
+  $('z-fit').addEventListener('click', function(){ g.v0 = 0; g.v1 = tFin; g.hechoFit = true; renderGTK(); });
+  $('z-in').addEventListener('click', function(){ ventana(centro(), (g.v1-g.v0)/2); renderGTK(); });
+  $('z-out').addEventListener('click', function(){ ventana(centro(), (g.v1-g.v0)*2); if (g.v1-g.v0>=tFin) g.hechoFit = true; renderGTK(); });
+  $('p-izq').addEventListener('click', function(){ var w = g.v1-g.v0; ventana(g.v0 + w/2 - w/3, w); renderGTK(); });
+  $('p-der').addEventListener('click', function(){ var w = g.v1-g.v0; ventana(g.v0 + w/2 + w/3, w); renderGTK(); });
+  renderGTK();
+
+  /* -------- preguntas -------- */
+  var RETOS = [
+    { q:'¿Qué periodo tiene la señal C en el cronograma?',
+      o:[ ['7 s', false, 'C cambia cada 7 s, pero un periodo completo son dos cambios: un tramo en alto y otro en bajo.'], ['14 s', true, 'Eso es: sube en 0, baja en 7, sube en 14… Es el reloj de <code>always #7 C=~C;</code>.'], ['5 s', false, 'Cada 5 s cambian R y S, no el reloj.'], ['No es periódica', false, 'Fíjate en los flancos de subida: 0, 14, 28, 42, 56, 70.'] ] },
+    { q:'En t = 7 S vale 1, pero <code>abajo</code> baja a 0. ¿Por qué?',
+      o:[ ['Porque el reloj baja en t = 7, y abajo = S and C.', true, 'Exacto. Con C = 0 la AND de abajo saca 0 aunque S siga en 1; el biestable deja de ver la entrada S.'], ['Porque S baja en t = 7.', false, 'S no cambia hasta t = 10. Mira la onda de S con el cursor en t = 7.'], ['Porque Q ya vale 1.', false, 'abajo no depende de Q: es la AND de S y C.'], ['Es un error de la simulación.', false, 'Es justo lo que tiene que pasar en un biestable activo por nivel alto.'] ] },
+    { q:'Entre t = 49 y t = 56 el reloj está en bajo. ¿Qué le pasa a Q cuando R sube a 1 en t = 55?',
+      o:[ ['Nada: Q sigue en 1 hasta que sube el reloj en t = 56.', true, 'Correcto: arriba = R and C = 0 mientras C = 0. En t = 56 sube el reloj, arriba pasa a 1 y Q cae a 0.'], ['Q baja a 0 inmediatamente.', false, 'Mira arriba: sigue en 0 hasta t = 56, porque C vale 0.'], ['Q pasa a x.', false, 'No hay ningún conflicto: el biestable está en estado neutro y conserva su valor.'], ['Q y NQ pasan a valer 0.', false, 'Eso sería el estado no válido, y requiere arriba = abajo = 1.'] ] },
+    { q:'En el fichero, ¿por qué <code>Q</code> aparece declarado tres veces con el mismo identificador <code>!</code>?',
+      o:[ ['Porque es el mismo cable visto desde el banco de pruebas, desde b y desde b1.', true, 'Así es. Las conexiones por puertos unen esos tres nombres en un único cable, y el VCD lo apunta una sola vez.'], ['Porque hay tres biestables distintos.', false, 'Solo hay un biestable (b1) dentro de un único RSC (b).'], ['Porque $dumpvars vuelca cada señal tres veces.', false, 'Cada señal aparece una vez por módulo en el que está declarada, pero sus cambios se escriben una sola vez.'], ['Es un error del fichero.', false, 'Es una optimización normal del formato VCD.'] ] }
+  ];
+  var elec = RETOS.map(function(){ return null; });
+  function renderRetos(){
+    $('retos').innerHTML = RETOS.map(function(r, i){
+      var h = '<div><p style="margin:0 0 var(--space-3)"><strong>'+(i+1)+'.</strong> '+r.q+'</p><div class="opciones">'+r.o.map(function(o, j){ return '<button class="opcion" data-i="'+i+'" data-j="'+j+'" aria-pressed="'+(elec[i]===j)+'">'+o[0]+'</button>'; }).join('')+'</div>';
+      if (elec[i]!==null){ var o = r.o[elec[i]]; h += '<div class="nota '+(o[1]?'nota-correcto':'nota-incorrecto')+'" role="status" style="margin-top:var(--space-3)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+(o[1]?'M3 10l4 4 10-9':'M5 5l10 10M15 5 5 15')+'"/></svg><div><b>'+(o[1]?'Correcto':'Incorrecto')+'</b><div class="cuerpo">'+o[2]+'</div></div></div>'; }
+      return h + '</div>';
+    }).join('');
+    $('retos').querySelectorAll('.opcion').forEach(function(b){ b.addEventListener('click', function(){ elec[+b.dataset.i] = +b.dataset.j; renderRetos(); }); });
+  }
+  renderRetos();
+})();
+</script>
+<footer>Computadores I · Grado en Ingeniería Informática · Daniel Hernández de la Iglesia (PB3)<br>Material de prácticas basado en <a href="http://avellano.usal.es/~compi/">la web de la asignatura</a>.</footer>
+</body>
+</html>
