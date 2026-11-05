@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modelos de comportamiento</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Lato:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: columna de lectura (68 ch) con simulador y banco de pruebas a ancho completo; tema único claro del sistema Computadores */
+:root {
+  --papel:#f8f4ec; --papel-elevado:#ffffff; --papel-hundido:#efe8db; --piedra:#e3d9c8; --piedra-fuerte:#857869;
+  --tinta:#2a2420; --tinta-suave:#6b5f55;
+  --vitor:#a8192b; --vitor-suave:#f7dddc; --sobre-vitor:#ffffff;
+  --dorado:#d9a441; --dorado-texto:#8a5a0a; --dorado-suave:#fbeed2;
+  --centenario:#385e9d; --centenario-suave:#dde6f4; --sobre-centenario:#ffffff;
+  --correcto:#1f6f43; --correcto-suave:#dcefe2;
+  --incorrecto:var(--vitor); --incorrecto-suave:var(--vitor-suave);
+  --foco:var(--centenario); --diag-bus:var(--tinta-suave);
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
+  --radius-sm:6px; --radius-md:12px; --radius-lg:20px; --radius-pill:999px;
+  --sombra-tarjeta:0 1px 2px rgba(42,36,32,.06), 0 4px 12px rgba(42,36,32,.06);
+  --font-display:"Bricolage Grotesque","Lato",system-ui,sans-serif;
+  --font-sans:"Lato",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme: light;
+}
+* { box-sizing:border-box; }
+body { background:var(--papel); color:var(--tinta); font-family:var(--font-sans); font-size:17px; line-height:27px; margin:0;
+  padding-block:var(--space-6) var(--space-8); padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+.wrap { max-width:960px; margin:0 auto; display:flex; flex-direction:column; gap:var(--space-7); }
+.prosa { max-width:68ch; }
+.prosa p { margin:0 0 var(--space-4); }
+h1,h2,h3 { font-family:var(--font-display); text-wrap:balance; margin:0; }
+h1 { font-size:40px; line-height:44px; font-weight:700; letter-spacing:-.02em; margin:var(--space-2) 0 var(--space-4); }
+h2 { font-size:28px; line-height:34px; font-weight:600; letter-spacing:-.01em; margin-bottom:var(--space-4); display:inline-block; box-shadow:inset 0 -4px 0 var(--dorado); }
+h3 { font-size:20px; line-height:26px; font-weight:600; }
+.etiqueta { display:inline-flex; align-items:center; gap:var(--space-1); font-size:12px; line-height:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px var(--space-2); border-radius:var(--radius-pill); background:var(--vitor-suave); color:var(--vitor); }
+.etiqueta-neutra { background:var(--papel-hundido); color:var(--tinta-suave); }
+.etiqueta-centenario { background:var(--centenario-suave); color:var(--centenario); }
+.cabecera { display:flex; align-items:center; gap:var(--space-3); }
+.cabecera img { width:40px; height:40px; }
+code { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:15px; background:var(--papel-hundido); padding:1px 6px; border-radius:var(--radius-sm); }
+pre { font-family:var(--font-mono); font-size:15px; line-height:24px; background:var(--papel-hundido); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); margin:0; overflow-x:auto; }
+code, pre, .seg button { font-variant-ligatures:none; font-feature-settings:"liga" 0, "calt" 0; }
+pre .kw { color:var(--vitor); font-weight:600; } pre .id { color:var(--centenario); } pre .cm { color:var(--tinta-suave); }
+pre .hl { background:var(--dorado); color:var(--tinta); border-radius:3px; padding:0 2px; }
+pre.consola { background:var(--tinta); color:var(--papel); min-height:60px; font-size:14px; }
+pre.consola .nuevo { background:rgba(217,164,65,.28); }
+pre.consola .x { color:var(--dorado); font-weight:600; }
+
+.nota { display:grid; grid-template-columns:20px 1fr; gap:var(--space-3); padding:var(--space-4); border-radius:var(--radius-md); background:var(--papel-elevado); border:1px solid var(--piedra); font-size:15px; line-height:22px; max-width:68ch; }
+.nota svg { width:20px; height:20px; margin-top:1px; }
+.nota b { display:block; margin-bottom:2px; }
+.nota-idea { background:var(--centenario-suave); border-color:var(--centenario-suave); color:var(--centenario); }
+.nota-cuidado { background:var(--dorado-suave); border-color:var(--dorado-suave); color:var(--dorado-texto); }
+.nota-correcto { background:var(--correcto-suave); border-color:var(--correcto-suave); color:var(--correcto); }
+.nota-incorrecto { background:var(--incorrecto-suave); border-color:var(--incorrecto-suave); color:var(--incorrecto); }
+.nota .cuerpo { color:var(--tinta); }
+
+.panel { background:var(--papel-elevado); border-radius:var(--radius-lg); box-shadow:var(--sombra-tarjeta); padding:var(--space-5); display:flex; flex-direction:column; gap:var(--space-5); }
+.grid2 { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:var(--space-5); align-items:start; }
+.grid2.iguales { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+@media (max-width:720px) { .grid2, .grid2.iguales { grid-template-columns:1fr; } }
+.escena { min-width:0; } .escena svg { width:100%; height:auto; display:block; }
+.derecha { display:flex; flex-direction:column; gap:var(--space-4); min-width:0; }
+
+/* esquema */
+.linea { stroke:var(--diag-bus); stroke-width:3; fill:none; stroke-linecap:round; stroke-linejoin:round; transition:stroke 250ms ease-out; }
+.linea.uno { stroke:var(--vitor); } .linea.cero { stroke:var(--tinta); } .linea.x { stroke:var(--dorado-texto); stroke-dasharray:3 5; }
+.puerta { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2.5; stroke-linejoin:round; transition:fill 250ms ease-out; }
+.puerta.activa { fill:var(--dorado-suave); stroke:var(--dorado-texto); }
+.burbuja { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2.5; }
+.nodo { fill:var(--tinta); }
+.pin { font-family:var(--font-display); font-size:17px; font-weight:600; fill:var(--tinta); }
+.ref { font-family:var(--font-mono); font-size:12px; fill:var(--tinta-suave); }
+.chip { rx:5; }
+.chip.uno { fill:var(--vitor); } .chip.cero { fill:var(--papel-hundido); stroke:var(--piedra); stroke-width:1.5; } .chip.x { fill:var(--dorado); }
+.chip.marca { stroke:var(--dorado-texto); stroke-width:3; }
+.chip-txt { font-family:var(--font-mono); font-size:15px; font-weight:600; }
+.chip-txt.uno { fill:var(--sobre-vitor); } .chip-txt.cero { fill:var(--tinta); } .chip-txt.x { fill:var(--tinta); }
+.caja-mod { fill:none; stroke:var(--piedra-fuerte); stroke-width:1.5; stroke-dasharray:6 5; rx:12; }
+
+/* controles */
+.ctl-grid { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2); }
+@media (max-width:420px) { .ctl-grid { grid-template-columns:1fr; } }
+.fuente { display:grid; grid-template-columns:auto 1fr; gap:var(--space-2); align-items:center; padding:var(--space-2) var(--space-3); border:1px solid var(--piedra); border-radius:var(--radius-md); font-size:15px; }
+.fuente .nombre { font-family:var(--font-mono); font-weight:600; font-size:15px; }
+.fuente .nombre small { display:block; font:400 11px/14px var(--font-sans); color:var(--tinta-suave); letter-spacing:.04em; }
+.seg { display:inline-flex; border:1px solid var(--piedra-fuerte); border-radius:var(--radius-sm); overflow:hidden; justify-self:end; }
+.seg button { font:600 16px/22px var(--font-mono); width:38px; height:38px; border:0; border-left:1px solid var(--piedra); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.seg button:first-child { border-left:0; }
+.seg button[aria-pressed="true"].v0 { background:var(--tinta); color:var(--papel); }
+.seg button[aria-pressed="true"].v1 { background:var(--vitor); color:var(--sobre-vitor); }
+.seg button[aria-pressed="true"].vx { background:var(--dorado); color:var(--tinta); }
+.seg button:focus-visible, .boton:focus-visible, .opcion:focus-visible { outline:2px solid var(--foco); outline-offset:2px; }
+.boton { font:700 15px/20px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.boton-primario { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.boton-discreto { background:transparent; border-color:transparent; color:var(--vitor); }
+.boton:disabled { opacity:.45; cursor:not-allowed; }
+.fila { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; }
+.lectura { font-size:15px; line-height:22px; color:var(--tinta-suave); margin:0; }
+.lectura strong { color:var(--tinta); }
+.modo { display:inline-flex; align-items:center; gap:var(--space-2); font-size:15px; font-weight:700; padding:var(--space-2) var(--space-3); border-radius:var(--radius-pill); }
+.modo.set { background:var(--vitor-suave); color:var(--vitor); } .modo.reset { background:var(--centenario-suave); color:var(--centenario); }
+.modo.mem { background:var(--papel-hundido); color:var(--tinta-suave); } .modo.inv { background:var(--dorado-suave); color:var(--dorado-texto); }
+
+table.tv { border-collapse:collapse; font-family:var(--font-mono); font-size:16px; }
+.tv th { font-family:var(--font-display); font-weight:600; padding:var(--space-2) var(--space-3); border-bottom:2px solid var(--tinta); text-align:center; }
+.tv td { padding:var(--space-2) var(--space-3); text-align:center; border-bottom:1px solid var(--piedra); }
+.tv th:nth-child(3), .tv td:nth-child(3) { border-left:2px solid var(--tinta); }
+.tv th:nth-child(5), .tv td:nth-child(5) { text-align:left; font-family:var(--font-sans); font-size:15px; }
+.tv tr.activa td { background:var(--dorado); font-weight:600; }
+
+/* traza de eventos */
+ol.traza { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:var(--space-2); font-size:15px; line-height:22px; }
+ol.traza li { display:grid; grid-template-columns:24px 1fr; gap:var(--space-2); align-items:start; }
+ol.traza .n { width:22px; height:22px; border-radius:50%; display:inline-grid; place-items:center; font:600 12px var(--font-mono); background:var(--papel-hundido); color:var(--tinta-suave); border:1px solid var(--piedra); margin-top:1px; }
+ol.traza li.asig .n { background:var(--tinta); color:var(--papel); border-color:var(--tinta); }
+ol.traza li.ultimo { background:var(--dorado-suave); border-radius:var(--radius-sm); }
+ol.traza .igual { color:var(--tinta-suave); }
+
+/* banco de pruebas */
+.pasos { display:flex; flex-wrap:wrap; gap:var(--space-1); align-items:center; font-size:14px; }
+.paso { display:inline-flex; align-items:center; gap:6px; padding:3px 10px 3px 3px; border-radius:var(--radius-pill); color:var(--tinta-suave); }
+.paso .n { width:22px; height:22px; border-radius:50%; display:inline-grid; place-items:center; font:600 12px var(--font-mono); background:var(--papel-hundido); color:var(--tinta-suave); border:1px solid var(--piedra); }
+.paso.hecho .n { background:var(--papel-elevado); color:var(--correcto); border-color:var(--correcto); }
+.paso.actual { background:var(--dorado); color:var(--tinta); font-weight:700; }
+.paso.actual .n { background:var(--tinta); color:var(--papel); border-color:var(--tinta); }
+.prediccion { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--piedra); border-radius:var(--radius-md); }
+.prediccion .fila-p { display:flex; flex-wrap:wrap; gap:var(--space-4); align-items:center; }
+.prediccion .fila-p > div { display:flex; align-items:center; gap:var(--space-2); font-family:var(--font-mono); font-weight:600; }
+.pie { font-size:13px; line-height:18px; color:var(--tinta-suave); }
+.resumen { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--space-3); }
+.tarjeta { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); background:var(--papel-elevado); font-size:15px; line-height:22px; }
+.tarjeta code { display:inline-block; margin-bottom:var(--space-2); font-weight:600; color:var(--vitor); }
+.carrera { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-3); min-width:0; }
+.carrera h3 code { font-size:17px; }
+.carrera .final { font-size:15px; font-weight:700; }
+
+/* pregunta tipo test */
+.opciones { display:flex; flex-direction:column; gap:var(--space-2); }
+.opcion { text-align:left; font:400 15px/22px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.opcion[aria-pressed="true"] { border-color:var(--vitor); box-shadow:inset 0 0 0 1px var(--vitor); }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+.nav-leccion{max-width:960px;margin:0 auto var(--space-5);display:flex;justify-content:space-between;gap:var(--space-3);font-size:14px;flex-wrap:wrap}.nav-leccion a{color:var(--centenario)}.nav-leccion span{color:var(--tinta-suave)}
+footer{max-width:960px;margin:48px auto 0;font-size:13px;line-height:18px;color:var(--tinta-suave)}footer a{color:var(--vitor)}
+pre .hl-no { background:var(--vitor-suave); color:var(--vitor); border-radius:3px; padding:0 2px; text-decoration:line-through; text-decoration-thickness:1px; }
+pre.cod-jk { font-size:14px; line-height:22px; }
+.estado-jk { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; }
+.chip-v { display:inline-flex; align-items:baseline; gap:6px; font:700 18px var(--font-mono); padding:4px 12px; border-radius:var(--radius-sm); }
+.chip-v small { font:600 12px var(--font-sans); }
+.chip-v.uno { background:var(--vitor); color:var(--sobre-vitor); } .chip-v.cero { background:var(--papel-hundido); color:var(--tinta); border:1px solid var(--piedra); }
+.tv-jk th:nth-child(3), .tv-jk td:nth-child(3) { text-align:left; font-family:var(--font-sans); font-size:15px; }
+.onda-cont { overflow-x:auto; } .onda-cont svg { display:block; width:100%; min-width:640px; height:auto; }
+.o-rejilla { stroke:var(--piedra); stroke-width:1; }
+.o-nom { font:600 12px var(--font-mono); fill:var(--tinta); } .o-val { fill:var(--vitor); }
+.o-tr { fill:none; stroke:var(--tinta); stroke-width:2; } .o-tr.sal { stroke:var(--vitor); stroke-width:2.5; }
+.o-x { fill:var(--dorado-suave); stroke:var(--dorado-texto); stroke-dasharray:3 3; }
+.o-cur { stroke:var(--centenario); stroke-width:1.5; stroke-dasharray:4 3; }
+.ev { cursor:pointer; } .ev circle { fill:var(--papel-elevado); stroke:var(--centenario); stroke-width:1.5; } .ev text { font:700 11px var(--font-mono); fill:var(--centenario); }
+.ev:hover circle, .ev.on circle { fill:var(--centenario); } .ev:hover text, .ev.on text { fill:#fff; }
+.ev:focus-visible { outline:none; } .ev:focus-visible circle { stroke:var(--tinta); stroke-width:3; }
+.comparativa { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:var(--space-3); }
+.comparativa h3 { margin-bottom:var(--space-2); } .comparativa ul { margin:0; padding-left:20px; }
+</style>
+</head>
+<body>
+<nav class="nav-leccion" aria-label="Navegación de la lección"><a href="index.html">← Índice de la sesión 6</a><span>11</span><span><a href="gtkwave.html">← Ver las señales con GTKWave</a></span></nav>
+<div class="wrap">
+<header class="prosa">
+  <div class="cabecera">
+    <img alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%236b5f55'%3E%3Crect x='18' y='2' width='4' height='8' rx='1'/%3E%3Crect x='30' y='2' width='4' height='8' rx='1'/%3E%3Crect x='42' y='2' width='4' height='8' rx='1'/%3E%3Crect x='18' y='54' width='4' height='8' rx='1'/%3E%3Crect x='30' y='54' width='4' height='8' rx='1'/%3E%3Crect x='42' y='54' width='4' height='8' rx='1'/%3E%3Crect x='2' y='18' width='8' height='4' rx='1'/%3E%3Crect x='2' y='30' width='8' height='4' rx='1'/%3E%3Crect x='2' y='42' width='8' height='4' rx='1'/%3E%3Crect x='54' y='18' width='8' height='4' rx='1'/%3E%3Crect x='54' y='30' width='8' height='4' rx='1'/%3E%3Crect x='54' y='42' width='8' height='4' rx='1'/%3E%3C/g%3E%3Crect x='8' y='8' width='48' height='48' rx='12' fill='%23a8192b'/%3E%3Crect x='16' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='25' y='24' width='7' height='16' rx='2' fill='%23f7dddc' fill-opacity='.35'/%3E%3Crect x='34' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='43' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3C/svg%3E">
+    <span class="etiqueta">Computadores · Lógica digital</span>
+  </div>
+  <h1>Modelos de comportamiento</h1>
+  <p>Hasta ahora hemos descrito los circuitos <strong>puerta a puerta</strong>: dos NOR realimentadas, dos AND delante, un detector de flanco… Es la descripción <strong>estructural</strong>. Funciona, pero en cuanto el circuito crece hay que vigilar realimentaciones, retardos y carreras, y se vuelve muy complicado.</p>
+  <p>Muchas veces no hace falta tanto detalle. Basta con describir <strong>qué tiene que hacer</strong> el circuito y dejar que una herramienta automática de <strong>síntesis</strong> decida con qué puertas construirlo. Es el <strong>modelo de comportamiento</strong>. Como ejemplo, un biestable JK activo en el flanco de subida del reloj, con PRESET y CLEAR activos a nivel bajo y prioritarios. Ocupa poco más de veinte líneas y no tiene ni una puerta NAND.</p>
+</header>
+
+<section>
+  <h2>El módulo JKup</h2>
+  <div class="prosa"><p>Tiene dos bloques <code>always</code> que esperan cada uno a su condición: el primero, al <strong>flanco de subida</strong> de C; el segundo, a <strong>cualquier cambio</strong> de nPRESET o nCLEAR. Prueba las entradas y observa qué líneas del código se ejecutan en cada caso. Cambiar J o K no despierta a ningún bloque: solo cuentan en el próximo flanco.</p></div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="derecha"><pre id="codigo" class="cod-jk"></pre></div>
+      <div class="derecha">
+        <div class="ctl-grid" id="ctl"></div>
+        <div class="fila"><button class="boton boton-primario" id="flanco">↑ Flanco de subida en C</button></div>
+        <div class="estado-jk" id="estado"></div>
+        <p class="lectura" id="lectura" aria-live="polite"></p>
+        <table class="tv tv-jk">
+          <thead><tr><th>J</th><th>K</th><th>Q tras el flanco</th></tr></thead>
+          <tbody id="tvjk">
+            <tr data-jk="00"><td>0</td><td>0</td><td>Q (no cambia)</td></tr>
+            <tr data-jk="01"><td>0</td><td>1</td><td>0 (reset)</td></tr>
+            <tr data-jk="10"><td>1</td><td>0</td><td>1 (set)</td></tr>
+            <tr data-jk="11"><td>1</td><td>1</td><td>~Q (cambia)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Qué hace cada línea</h2>
+  <div class="resumen">
+    <div class="tarjeta"><code>output reg Q</code><br>Algo tiene que <strong>retener</strong> el valor de Q entre flanco y flanco, así que el cable se convierte en registro. Todo lo que se asigna dentro de un <code>always</code> o un <code>initial</code> tiene que ser <code>reg</code>.</div>
+    <div class="tarjeta"><code>not(NQ,Q);</code><br>NQ sigue siendo un <code>wire</code> conducido por una puerta, como antes. En un mismo módulo se pueden mezclar descripción estructural y de comportamiento.</div>
+    <div class="tarjeta"><code>initial begin Q=0; end</code><br>Valor de partida del biestable. Sin él, Q empezaría en x hasta el primer set, reset o PRESET.</div>
+    <div class="tarjeta"><code>always @(posedge C)</code><br>El bloque se ejecuta <strong>cada vez que C sube</strong>. Con <code>negedge</code> sería en la bajada. Entre flanco y flanco, el bloque espera sin hacer nada.</div>
+    <div class="tarjeta"><code>if (nPRESET &amp;&amp; nCLEAR)</code><br>Solo se atiende a J y K si ni PRESET ni CLEAR están activos (las dos a 1). Así se consigue su <strong>prioridad</strong> sobre el reloj.</div>
+    <div class="tarjeta"><code>case ({J,K})</code><br>Las llaves <strong>concatenan</strong>: <code>{J,K}</code> es un valor de 2 bits con J a la izquierda. Se compara con constantes como <code>2'b10</code>: 2 bits, en binario, valor 10.</div>
+    <div class="tarjeta"><code>2'b10: Q=1;</code><br>Cada alternativa del <code>case</code> dice qué hacer con ese valor de {J,K}: set, reset o cambio (<code>~Q</code>). <code>2'b00</code> no aparece: con J = K = 0 no se ejecuta nada.</div>
+    <div class="tarjeta"><code>always @(nPRESET,nCLEAR)</code><br>Se ejecuta en cuanto <strong>cambia cualquiera</strong> de las dos señales, sin esperar al reloj: PRESET y CLEAR son <strong>asíncronas</strong>. Si están activas las dos (<code>2'b00</code>), no se hace nada.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Banco de pruebas</h2>
+  <div class="prosa"><p>El apunte no trae banco de pruebas para este módulo; este recorre todos los casos. Es un reloj de periodo 10, con flancos de subida en 5, 15, 25… El cronograma está dibujado con el volcado VCD real que genera Icarus. <strong>Haz clic en los números</strong> del cronograma para ver qué ocurre en cada instante.</p></div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="derecha"><pre id="tbcode"></pre></div>
+      <div class="derecha"><pre class="consola" id="consola"></pre></div>
+    </div>
+    <div class="onda-cont"><svg id="onda" role="img" aria-label="Cronograma del banco de pruebas del biestable JK"></svg></div>
+    <div id="evento" aria-live="polite"></div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Estructural frente a comportamiento</h2>
+  <div class="comparativa">
+    <div class="tarjeta">
+      <h3>Estructural</h3>
+      <ul>
+        <li>Se describe <strong>cómo</strong> está hecho: puertas, cables y conexiones.</li>
+        <li>El comportamiento depende de realimentaciones y retardos: un JK con NAND puede oscilar con J = K = 1 si los retardos no son los adecuados.</li>
+        <li>Para añadir un detector de flanco hay que ajustar los retardos a mano.</li>
+      </ul>
+    </div>
+    <div class="tarjeta">
+      <h3>Comportamiento</h3>
+      <ul>
+        <li>Se describe <strong>qué</strong> hace: «en el flanco de subida, si J = K = 1, Q cambia».</li>
+        <li>No hay carreras internas: cada bloque se ejecuta entero cuando llega su evento.</li>
+        <li>El flanco lo da <code>posedge</code>; la prioridad, un <code>if</code>. La herramienta de síntesis decide las puertas.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Compruébalo</h2>
+  <div id="retos" style="display:flex;flex-direction:column;gap:var(--space-6)"></div>
+  <p class="pie" style="margin-top:var(--space-4)">Las respuestas se corrigen en la página; nada se envía a ningún sitio.</p>
+</section>
+
+<section class="prosa">
+  <h2>Qué conviene saber</h2>
+  <div class="nota nota-idea">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 16h4"/></svg>
+    <div><b>Idea</b><div class="cuerpo">Un <code>case</code> sin la alternativa que coincide no ejecuta nada, y un <code>reg</code> al que no se asigna nada <strong>conserva su valor</strong>. Por eso no hace falta escribir <code>2'b00: Q=Q;</code>: la memoria del biestable sale gratis del propio registro.</div></div>
+  </div>
+  <p style="margin-top:var(--space-4)"></p>
+  <div class="nota nota-cuidado">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
+    <div><b>El bloque asíncrono solo despierta con un cambio</b><div class="cuerpo"><code>always @(nPRESET,nCLEAR)</code> no comprueba continuamente las señales: actúa cuando cambian. Mientras CLEAR sigue activo, lo que impide que un flanco de reloj modifique Q es el <code>if</code> del otro bloque (mira t = 65 en el cronograma). Además, si el banco de pruebas activa PRESET o CLEAR justo en t = 0, compite con el <code>initial Q=0;</code>. En Icarus gana PRESET o CLEAR, pero el estándar no garantiza el orden entre bloques que arrancan a la vez.</div></div>
+  </div>
+  <p style="margin-top:var(--space-4)"></p>
+  <div class="nota">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 6v.5"/></svg>
+    <div><b>Lo que viene</b><div class="cuerpo">El ejercicio siguiente del apunte pide comprobar este JK y compararlo con el JK de puertas NAND al que se le añade un detector de flanco. Fíjate en la diferencia de dificultad entre los dos métodos.</div></div>
+  </div>
+</section>
+</div>
+
+<script type="text/plain" id="vcd-datos">
+$date
+	Thu Nov  5 09:08:29 2026
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1s
+$end
+$scope module TestJK $end
+$var wire 1 ! Q $end
+$var wire 1 " NQ $end
+$var reg 1 # C $end
+$var reg 1 $ J $end
+$var reg 1 % K $end
+$var reg 1 & nCLEAR $end
+$var reg 1 ' nPRESET $end
+$scope module jk $end
+$var wire 1 # C $end
+$var wire 1 $ J $end
+$var wire 1 % K $end
+$var wire 1 " NQ $end
+$var wire 1 & nCLEAR $end
+$var wire 1 ' nPRESET $end
+$var reg 1 ! Q $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+$end
+#0
+$dumpvars
+1'
+1&
+0%
+0$
+0#
+1"
+0!
+$end
+#5
+1#
+#10
+0#
+#12
+1$
+#15
+0"
+1!
+1#
+#20
+0#
+#22
+1%
+0$
+#25
+1"
+0!
+1#
+#30
+0#
+#32
+1$
+#35
+0"
+1!
+1#
+#40
+0#
+#45
+1"
+0!
+1#
+#50
+0#
+#52
+0%
+0$
+#55
+1#
+#57
+0"
+1!
+0'
+#60
+0#
+#61
+1'
+#64
+1"
+0!
+1$
+0&
+#65
+1#
+#70
+0#
+1&
+#75
+0"
+1!
+1#
+#80
+0#
+</script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var esc = function(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+
+  /* -------- simulador del módulo -------- */
+  var COD = [
+    ['h1', '<span class="kw">module</span> <span class="id">JKup</span>(<span class="kw">output reg</span> Q, <span class="kw">output wire</span> NQ, <span class="kw">input wire</span> J, <span class="kw">input wire</span> K,'],
+    ['h2', '            <span class="kw">input wire</span> C, <span class="kw">input wire</span> nPRESET, <span class="kw">input wire</span> nCLEAR);'],
+    ['', ''],
+    ['not', '  <span class="kw">not</span>(NQ,Q);'],
+    ['', ''],
+    ['ini', '  <span class="kw">initial</span>'],
+    ['ini', '  <span class="kw">begin</span>'],
+    ['ini', '    Q=0;'],
+    ['ini', '  <span class="kw">end</span>'],
+    ['', ''],
+    ['ck', '  <span class="kw">always</span> @(<span class="kw">posedge</span> C)'],
+    ['if', '    <span class="kw">if</span> (nPRESET &amp;&amp; nCLEAR) <span class="cm">// PRESET y CLEAR tienen prioridad</span>'],
+    ['c1', '      <span class="kw">case</span> ({J,K})'],
+    ['jk10', "        2'b10: Q=1;"],
+    ['jk01', "        2'b01: Q=0;"],
+    ['jk11', "        2'b11: Q=~Q;"],
+    ['c1', '      <span class="kw">endcase</span>'],
+    ['', ''],
+    ['as', '  <span class="kw">always</span> @(nPRESET,nCLEAR)'],
+    ['c2', '    <span class="kw">case</span> ({nPRESET,nCLEAR}) <span class="cm">// Si están activas ambas, no hacer nada</span>'],
+    ['p01', "      2'b01: Q=1;"],
+    ['p10', "      2'b10: Q=0;"],
+    ['c2', '    <span class="kw">endcase</span>'],
+    ['fin', '<span class="kw">endmodule</span>']
+  ];
+  var st = { J:0, K:0, nPRESET:1, nCLEAR:1, Q:0 }, traza = { lineas:['ini'], no:[] }, texto = 'En t = 0 se ejecuta el <code>initial</code>: Q = 0, y la puerta NOT da NQ = 1. Los dos bloques <code>always</code> quedan esperando su evento.';
+  function renderCod(){
+    $('codigo').innerHTML = COD.map(function(l){
+      var c = traza.no.indexOf(l[0])>=0 ? 'hl-no' : traza.lineas.indexOf(l[0])>=0 ? 'hl' : '';
+      return c ? '<span class="'+c+'">'+l[1]+'</span>' : l[1];
+    }).join('\n');
+  }
+  function renderSim(){
+    renderCod();
+    $('ctl').innerHTML = [['J',''],['K',''],['nPRESET','activa a nivel bajo'],['nCLEAR','activa a nivel bajo']].map(function(p){
+      return '<div class="fuente"><span class="nombre">'+p[0]+(p[1]?'<small>'+p[1]+'</small>':'')+'</span><span class="seg" role="group" aria-label="Valor de '+p[0]+'">'+[0,1].map(function(v){ return '<button class="v'+v+'" data-k="'+p[0]+'" data-v="'+v+'" aria-pressed="'+(st[p[0]]===v)+'">'+v+'</button>'; }).join('')+'</span></div>';
+    }).join('');
+    $('ctl').querySelectorAll('button').forEach(function(b){ b.addEventListener('click', function(){ cambiar(b.dataset.k, +b.dataset.v); }); });
+    var chip = function(n, v){ return '<span class="chip-v '+(v?'uno':'cero')+'"><small>'+n+'</small>'+v+'</span>'; };
+    $('estado').innerHTML = chip('Q', st.Q) + chip('NQ', st.Q?0:1) + '<span class="modo '+(st.nPRESET&&st.nCLEAR?'mem':'inv')+'">'+(!st.nPRESET&&!st.nCLEAR ? 'PRESET y CLEAR activas: no se hace nada' : !st.nPRESET ? 'PRESET activa: Q forzada a 1' : !st.nCLEAR ? 'CLEAR activa: Q forzada a 0' : 'Funcionamiento normal: manda el reloj')+'</span>';
+    $('lectura').innerHTML = texto;
+    $('tvjk').querySelectorAll('tr').forEach(function(tr){ tr.className = tr.dataset.jk===(''+st.J+st.K) ? 'activa' : ''; });
+  }
+  function cambiar(k, v){
+    if (st[k]===v){ return; }
+    st[k] = v;
+    if (k==='J' || k==='K'){
+      traza = { lineas:[], no:[] };
+      texto = k+' pasa a '+v+'. Ningún bloque espera a '+k+': no se ejecuta nada. El nuevo valor se usará en el próximo flanco de subida de C.';
+    } else {
+      var p = ''+st.nPRESET+st.nCLEAR, ant = st.Q;
+      traza = { lineas:['as','c2'], no:[] };
+      if (p==='01'){ st.Q = 1; traza.lineas.push('p01'); texto = k+' cambia y despierta el segundo always, sin esperar al reloj. {nPRESET,nCLEAR} = 2\'b01 (PRESET activa): <strong>Q = 1</strong>'+(ant===1?' (ya lo era)':'')+'.'; }
+      else if (p==='10'){ st.Q = 0; traza.lineas.push('p10'); texto = k+' cambia y despierta el segundo always, sin esperar al reloj. {nPRESET,nCLEAR} = 2\'b10 (CLEAR activa): <strong>Q = 0</strong>'+(ant===0?' (ya lo era)':'')+'.'; }
+      else texto = k+' cambia y despierta el segundo always. {nPRESET,nCLEAR} = 2\'b'+p+': no coincide con ninguna alternativa del case, así que no se asigna nada y <strong>Q conserva '+st.Q+'</strong>.'+(p==='00'?' Con las dos activas, el módulo no hace nada.':'');
+    }
+    renderSim();
+  }
+  $('flanco').addEventListener('click', function(){
+    var ant = st.Q;
+    traza = { lineas:['ck','if'], no:[] };
+    if (!(st.nPRESET && st.nCLEAR)){ traza.no = ['if']; texto = 'Flanco de subida: se despierta el primer always, pero <code>nPRESET &amp;&amp; nCLEAR</code> es falso: '+(!st.nPRESET&&!st.nCLEAR?'PRESET y CLEAR están activas':!st.nPRESET?'PRESET está activa':'CLEAR está activa')+'. Se salta el case y <strong>Q sigue en '+st.Q+'</strong>, aunque J = '+st.J+' y K = '+st.K+'.'; }
+    else {
+      traza.lineas.push('c1');
+      var jk = ''+st.J+st.K;
+      if (jk==='10'){ st.Q = 1; traza.lineas.push('jk10'); }
+      else if (jk==='01'){ st.Q = 0; traza.lineas.push('jk01'); }
+      else if (jk==='11'){ st.Q = st.Q ? 0 : 1; traza.lineas.push('jk11'); }
+      texto = 'Flanco de subida: se despierta el primer always y el if se cumple. {J,K} = 2\'b'+jk+': '+(jk==='00' ? 'ninguna alternativa coincide, no se asigna nada y <strong>Q conserva '+st.Q+'</strong>.' : jk==='11' ? 'Q=~Q, así que <strong>Q pasa de '+ant+' a '+st.Q+'</strong>.' : '<strong>Q = '+st.Q+'</strong>'+(ant===st.Q?' (ya lo era)':'')+'.');
+    }
+    renderSim();
+  });
+  renderSim();
+
+  /* -------- banco de pruebas: código, VCD y cronograma -------- */
+  $('tbcode').innerHTML = ['<span class="kw">module</span> <span class="id">TestJK</span>;','  <span class="kw">reg</span> J,K,C,nPRESET,nCLEAR;','  <span class="kw">wire</span> Q,NQ;','  <span class="id">JKup</span> jk(Q,NQ,J,K,C,nPRESET,nCLEAR);','','  <span class="kw">initial</span> C=0;','  <span class="kw">always</span> #5 C=~C;','','  <span class="kw">initial</span>','    <span class="kw">begin</span>','      $dumpfile("jk.vcd");','      $dumpvars;','      $monitor($time," J=%b K=%b nPRESET=%b nCLEAR=%b Q=%b NQ=%b",','               J,K,nPRESET,nCLEAR,Q,NQ);','      J=0; K=0; nPRESET=1; nCLEAR=1;','      #12 J=1; K=0;        <span class="cm">// t=12</span>','      #10 J=0; K=1;        <span class="cm">// t=22</span>','      #10 J=1; K=1;        <span class="cm">// t=32</span>','      #20 J=0; K=0;        <span class="cm">// t=52</span>','      #5  nPRESET=0;       <span class="cm">// t=57</span>','      #4  nPRESET=1;       <span class="cm">// t=61</span>','      #3  nCLEAR=0; J=1; K=0; <span class="cm">// t=64</span>','      #6  nCLEAR=1;        <span class="cm">// t=70</span>','      #10 $finish;         <span class="cm">// t=80</span>','    <span class="kw">end</span>','<span class="kw">endmodule</span>'].join('\n');
+  var SALIDA = ["                   0 J=0 K=0 nPRESET=1 nCLEAR=1 Q=0 NQ=1", "                  12 J=1 K=0 nPRESET=1 nCLEAR=1 Q=0 NQ=1", "                  15 J=1 K=0 nPRESET=1 nCLEAR=1 Q=1 NQ=0", "                  22 J=0 K=1 nPRESET=1 nCLEAR=1 Q=1 NQ=0", "                  25 J=0 K=1 nPRESET=1 nCLEAR=1 Q=0 NQ=1", "                  32 J=1 K=1 nPRESET=1 nCLEAR=1 Q=0 NQ=1", "                  35 J=1 K=1 nPRESET=1 nCLEAR=1 Q=1 NQ=0", "                  45 J=1 K=1 nPRESET=1 nCLEAR=1 Q=0 NQ=1", "                  52 J=0 K=0 nPRESET=1 nCLEAR=1 Q=0 NQ=1", "                  57 J=0 K=0 nPRESET=0 nCLEAR=1 Q=1 NQ=0", "                  61 J=0 K=0 nPRESET=1 nCLEAR=1 Q=1 NQ=0", "                  64 J=1 K=0 nPRESET=1 nCLEAR=0 Q=0 NQ=1", "                  70 J=1 K=0 nPRESET=1 nCLEAR=1 Q=0 NQ=1", "                  75 J=1 K=0 nPRESET=1 nCLEAR=1 Q=1 NQ=0", "jk.v:48: $finish called at 80 (1s)"];
+  $('consola').innerHTML = SALIDA.map(esc).join('\n');
+
+  var VCD = $('vcd-datos').textContent, ids = {}, cambios = {}, t = 0, tFin = 0, prof = 0, enDef = true;
+  VCD.split('\n').forEach(function(l){
+    var s = l.trim(), m;
+    if (enDef){
+      if (/^\$scope/.test(s)) prof++;
+      else if (/^\$upscope/.test(s)) prof--;
+      else if ((m = s.match(/^\$var \S+ \d+ (\S+) (\S+) \$end/)) && prof===1){ ids[m[2]] = m[1]; cambios[m[1]] = []; }
+      else if (/^\$enddefinitions/.test(s)) enDef = false;
+      return;
+    }
+    if (s[0]==='#'){ t = +s.slice(1); tFin = Math.max(tFin, t); return; }
+    if ((m = s.match(/^([01xz])(.+)$/)) && cambios[m[2]]) cambios[m[2]].push([t, m[1]==='0'||m[1]==='1' ? +m[1] : m[1]]);
+  });
+  var FILAS = ['C','J','K','nPRESET','nCLEAR','Q','NQ'];
+  var EVENTOS = [
+    [5,  'Flanco de subida con J = K = 0: el case no encuentra alternativa y Q se queda en 0.'],
+    [15, 'Flanco de subida con J = 1, K = 0 (desde t = 12): <strong>set</strong>, Q = 1.'],
+    [25, 'Flanco de subida con J = 0, K = 1 (desde t = 22): <strong>reset</strong>, Q = 0.'],
+    [35, 'Flanco de subida con J = K = 1: <code>Q=~Q</code>, Q pasa a 1.'],
+    [45, 'Otro flanco con J = K = 1: Q vuelve a cambiar, a 0. Con J = K = 1, Q tiene la mitad de frecuencia que el reloj.'],
+    [55, 'Flanco de subida con J = K = 0 (desde t = 52): no hay alternativa en el case y Q se queda en 0.'],
+    [57, 'nPRESET baja <strong>entre dos flancos de reloj</strong>: el bloque asíncrono pone Q = 1 al instante, sin esperar al flanco de t = 65.'],
+    [61, 'nPRESET vuelve a 1: {1,1} no está en el case, no se hace nada y Q se queda en 1.'],
+    [64, 'nCLEAR baja: Q = 0 al instante. A la vez, J = 1 y K = 0.'],
+    [65, 'Flanco de subida con J = 1, K = 0… pero nCLEAR = 0: el <code>if</code> falla y Q sigue en 0. <strong>CLEAR tiene prioridad</strong> sobre el reloj.'],
+    [75, 'nCLEAR ya está en 1 (desde t = 70): el flanco con J = 1, K = 0 hace <strong>set</strong>, Q = 1.']
+  ];
+  var cursor = null;
+  function valor(n, tt){ var c = cambios[ids[n]], v = 'x'; for (var i=0;i<c.length && c[i][0]<=tt;i++) v = c[i][1]; return v; }
+  function renderOnda(){
+    var AN = 900, IZQ = 110, FH = 30, ARR = 62, H = ARR + FILAS.length*FH + 22;
+    var X = function(tt){ return IZQ + 10 + tt*((AN-IZQ-24)/tFin); };
+    var h = '';
+    for (var tt=0; tt<=tFin; tt+=10) h += '<line class="o-rejilla" x1="'+X(tt)+'" y1="'+(ARR-6)+'" x2="'+X(tt)+'" y2="'+(H-18)+'"/><text class="ref" x="'+X(tt)+'" y="'+(H-4)+'" text-anchor="middle">'+tt+'</text>';
+    FILAS.forEach(function(n, f){
+      var y0 = ARR + f*FH, yA = y0+5, yB = y0+FH-7, c = cambios[ids[n]], d = '', prev = null;
+      var vc = cursor===null ? '' : ' = '+valor(n, cursor);
+      h += '<text class="o-nom" x="'+(IZQ-6)+'" y="'+(y0+FH/2+3)+'" text-anchor="end">'+n+'<tspan class="o-val">'+vc+'</tspan></text>';
+      c.forEach(function(cc, i){ var t1 = i+1<c.length ? c[i+1][0] : tFin, v = cc[1];
+        if (v!==0 && v!==1){ h += '<rect class="o-x" x="'+X(cc[0])+'" y="'+yA+'" width="'+Math.max(1.5,X(t1)-X(cc[0]))+'" height="'+(yB-yA)+'"/>'; prev = null; return; }
+        var y = v===1 ? yA : yB; d += (prev===null ? ' M'+X(cc[0])+' '+y : ' L'+X(cc[0])+' '+y) + ' L'+X(t1)+' '+y; prev = y; });
+      h += '<path class="o-tr'+(n==='Q'||n==='NQ'?' sal':'')+'" d="'+d+'"/>';
+    });
+    if (cursor!==null) h += '<line class="o-cur" x1="'+X(cursor)+'" y1="'+(ARR-8)+'" x2="'+X(cursor)+'" y2="'+(H-18)+'"/>';
+    var nivel = 0;
+    EVENTOS.forEach(function(e, i){ var on = cursor===e[0];
+      nivel = i>0 && e[0]-EVENTOS[i-1][0] < 4 ? 1-nivel : 0;
+      var cy = nivel ? 42 : 16;
+      h += '<line class="o-rejilla" x1="'+X(e[0])+'" y1="'+(cy+10)+'" x2="'+X(e[0])+'" y2="'+(ARR-6)+'"/><g class="ev'+(on?' on':'')+'" data-i="'+i+'" tabindex="0" role="button" aria-label="Evento en t = '+e[0]+'"><circle cx="'+X(e[0])+'" cy="'+cy+'" r="10"/><text x="'+X(e[0])+'" y="'+(cy+4)+'" text-anchor="middle">'+(i+1)+'</text></g>'; });
+    var S = $('onda'); S.setAttribute('viewBox','0 0 '+AN+' '+H); S.innerHTML = h;
+    S.querySelectorAll('.ev').forEach(function(g){
+      var go = function(){ var e = EVENTOS[+g.dataset.i]; cursor = e[0]; renderOnda(); renderEvento(+g.dataset.i); var n = $('onda').querySelector('.ev[data-i="'+g.dataset.i+'"]'); if (n) n.focus(); };
+      g.addEventListener('click', go); g.addEventListener('keydown', function(ev){ if (ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); go(); } });
+    });
+  }
+  function renderEvento(i){
+    if (i===undefined){ $('evento').innerHTML = '<p class="lectura">Elige un número para situar el cursor. Junto a cada señal aparecerá su valor en ese instante.</p>'; return; }
+    var e = EVENTOS[i];
+    $('evento').innerHTML = '<div class="nota nota-idea" style="max-width:none"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 16h4"/></svg><div><b>'+(i+1)+' · t = '+e[0]+'</b><div class="cuerpo">'+e[1]+'</div></div></div>';
+  }
+  renderOnda(); renderEvento();
+
+  /* -------- preguntas -------- */
+  var RETOS = [
+    { q:'En t = 57 nPRESET baja, entre dos flancos de reloj. ¿Cuándo cambia Q?',
+      o:[ ['En ese mismo instante, t = 57.', true, 'Sí: el segundo always espera a cualquier cambio de nPRESET o nCLEAR, no al reloj. Por eso PRESET y CLEAR son asíncronas.'], ['En el siguiente flanco de subida, t = 65.', false, 'Eso pasaría si PRESET se tratara dentro del bloque <code>@(posedge C)</code>. Aquí tiene su propio bloque.'], ['Nunca: hace falta que J = 1.', false, 'PRESET no depende de J ni de K.'], ['Cuando nPRESET vuelve a 1.', false, 'Al volver a 1 (t = 61) no se hace nada: {1,1} no está en el case.'] ] },
+    { q:'En el flanco de t = 65, J = 1 y K = 0, pero nCLEAR = 0. ¿Qué pasa con Q?',
+      o:[ ['Sigue en 0: el if del bloque del reloj no se cumple.', true, 'Correcto: <code>nPRESET &amp;&amp; nCLEAR</code> vale 0, así que se salta el case. Así se implementa que CLEAR tenga prioridad.'], ['Pasa a 1 porque J = 1.', false, 'J y K solo se miran si PRESET y CLEAR están inactivas.'], ['Pasa a x por el conflicto.', false, 'No hay conflicto: el if decide quién manda y Q tiene un valor bien definido.'], ['Cambia de valor (~Q).', false, 'Eso sería con J = K = 1 y sin CLEAR.'] ] },
+    { q:'¿Por qué Q se declara <code>reg</code> y NQ <code>wire</code>?',
+      o:[ ['Q se asigna dentro de bloques always e initial; NQ lo conduce una puerta.', true, 'Exacto. Las asignaciones de procedimiento necesitan un registro, que además retiene el valor. NQ es la salida de la NOT.'], ['Porque Q es la salida principal.', false, 'Ser la salida principal no tiene nada que ver; lo que importa es <em>cómo</em> recibe su valor.'], ['Porque NQ no puede ser reg en ningún caso.', false, 'NQ podría ser reg si se asignara dentro de un always. Aquí lo da una puerta, así que tiene que ser wire.'], ['Da igual: se pueden intercambiar.', false, 'Una puerta no puede escribir en un reg, ni un always en un wire.'] ] },
+    { q:'Con J = K = 1 y un reloj de periodo 10, ¿qué periodo tiene Q?',
+      o:[ ['20', true, 'Q cambia en cada flanco de subida, uno cada 10 unidades: tarda 20 en completar un ciclo. Mira t = 35 y t = 45 en el cronograma.'], ['10', false, 'Q cambia cada 10, pero un periodo completo son dos cambios.'], ['5', false, 'El biestable solo reacciona en los flancos de subida, no en los de bajada.'], ['Q no cambia.', false, 'Con J = K = 1 la alternativa <code>2\'b11: Q=~Q;</code> invierte Q en cada flanco.'] ] }
+  ];
+  var elec = RETOS.map(function(){ return null; });
+  function renderRetos(){
+    $('retos').innerHTML = RETOS.map(function(r, i){
+      var h = '<div><p style="margin:0 0 var(--space-3)"><strong>'+(i+1)+'.</strong> '+r.q+'</p><div class="opciones">'+r.o.map(function(o, j){ return '<button class="opcion" data-i="'+i+'" data-j="'+j+'" aria-pressed="'+(elec[i]===j)+'">'+o[0]+'</button>'; }).join('')+'</div>';
+      if (elec[i]!==null){ var o = r.o[elec[i]]; h += '<div class="nota '+(o[1]?'nota-correcto':'nota-incorrecto')+'" role="status" style="margin-top:var(--space-3)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+(o[1]?'M3 10l4 4 10-9':'M5 5l10 10M15 5 5 15')+'"/></svg><div><b>'+(o[1]?'Correcto':'Incorrecto')+'</b><div class="cuerpo">'+o[2]+'</div></div></div>'; }
+      return h + '</div>';
+    }).join('');
+    $('retos').querySelectorAll('.opcion').forEach(function(b){ b.addEventListener('click', function(){ elec[+b.dataset.i] = +b.dataset.j; renderRetos(); }); });
+  }
+  renderRetos();
+})();
+</script>
+<footer>Computadores I · Grado en Ingeniería Informática · Daniel Hernández de la Iglesia (PB3)<br>Material de prácticas basado en <a href="http://avellano.usal.es/~compi/">la web de la asignatura</a>.</footer>
+</body>
+</html>
