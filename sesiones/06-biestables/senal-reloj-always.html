@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Señal de reloj y bloque always</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Lato:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: columna de lectura (68 ch) con simulador y banco de pruebas a ancho completo; tema único claro del sistema Computadores */
+:root {
+  --papel:#f8f4ec; --papel-elevado:#ffffff; --papel-hundido:#efe8db; --piedra:#e3d9c8; --piedra-fuerte:#857869;
+  --tinta:#2a2420; --tinta-suave:#6b5f55;
+  --vitor:#a8192b; --vitor-suave:#f7dddc; --sobre-vitor:#ffffff;
+  --dorado:#d9a441; --dorado-texto:#8a5a0a; --dorado-suave:#fbeed2;
+  --centenario:#385e9d; --centenario-suave:#dde6f4; --sobre-centenario:#ffffff;
+  --correcto:#1f6f43; --correcto-suave:#dcefe2;
+  --incorrecto:var(--vitor); --incorrecto-suave:var(--vitor-suave);
+  --foco:var(--centenario); --diag-bus:var(--tinta-suave);
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
+  --radius-sm:6px; --radius-md:12px; --radius-lg:20px; --radius-pill:999px;
+  --sombra-tarjeta:0 1px 2px rgba(42,36,32,.06), 0 4px 12px rgba(42,36,32,.06);
+  --font-display:"Bricolage Grotesque","Lato",system-ui,sans-serif;
+  --font-sans:"Lato",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme: light;
+}
+* { box-sizing:border-box; }
+body { background:var(--papel); color:var(--tinta); font-family:var(--font-sans); font-size:17px; line-height:27px; margin:0;
+  padding-block:var(--space-6) var(--space-8); padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+.wrap { max-width:960px; margin:0 auto; display:flex; flex-direction:column; gap:var(--space-7); }
+.prosa { max-width:68ch; }
+.prosa p { margin:0 0 var(--space-4); }
+h1,h2,h3 { font-family:var(--font-display); text-wrap:balance; margin:0; }
+h1 { font-size:40px; line-height:44px; font-weight:700; letter-spacing:-.02em; margin:var(--space-2) 0 var(--space-4); }
+h2 { font-size:28px; line-height:34px; font-weight:600; letter-spacing:-.01em; margin-bottom:var(--space-4); display:inline-block; box-shadow:inset 0 -4px 0 var(--dorado); }
+h3 { font-size:20px; line-height:26px; font-weight:600; }
+.etiqueta { display:inline-flex; align-items:center; gap:var(--space-1); font-size:12px; line-height:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px var(--space-2); border-radius:var(--radius-pill); background:var(--vitor-suave); color:var(--vitor); }
+.etiqueta-neutra { background:var(--papel-hundido); color:var(--tinta-suave); }
+.etiqueta-centenario { background:var(--centenario-suave); color:var(--centenario); }
+.cabecera { display:flex; align-items:center; gap:var(--space-3); }
+.cabecera img { width:40px; height:40px; }
+code { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:15px; background:var(--papel-hundido); padding:1px 6px; border-radius:var(--radius-sm); }
+pre { font-family:var(--font-mono); font-size:15px; line-height:24px; background:var(--papel-hundido); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); margin:0; overflow-x:auto; }
+code, pre, .seg button { font-variant-ligatures:none; font-feature-settings:"liga" 0, "calt" 0; }
+pre .kw { color:var(--vitor); font-weight:600; } pre .id { color:var(--centenario); } pre .cm { color:var(--tinta-suave); }
+pre .hl { background:var(--dorado); color:var(--tinta); border-radius:3px; padding:0 2px; }
+pre.consola { background:var(--tinta); color:var(--papel); min-height:60px; font-size:14px; }
+pre.consola .nuevo { background:rgba(217,164,65,.28); }
+pre.consola .x { color:var(--dorado); font-weight:600; }
+
+.nota { display:grid; grid-template-columns:20px 1fr; gap:var(--space-3); padding:var(--space-4); border-radius:var(--radius-md); background:var(--papel-elevado); border:1px solid var(--piedra); font-size:15px; line-height:22px; max-width:68ch; }
+.nota svg { width:20px; height:20px; margin-top:1px; }
+.nota b { display:block; margin-bottom:2px; }
+.nota-idea { background:var(--centenario-suave); border-color:var(--centenario-suave); color:var(--centenario); }
+.nota-cuidado { background:var(--dorado-suave); border-color:var(--dorado-suave); color:var(--dorado-texto); }
+.nota-correcto { background:var(--correcto-suave); border-color:var(--correcto-suave); color:var(--correcto); }
+.nota-incorrecto { background:var(--incorrecto-suave); border-color:var(--incorrecto-suave); color:var(--incorrecto); }
+.nota .cuerpo { color:var(--tinta); }
+
+.panel { background:var(--papel-elevado); border-radius:var(--radius-lg); box-shadow:var(--sombra-tarjeta); padding:var(--space-5); display:flex; flex-direction:column; gap:var(--space-5); }
+.grid2 { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:var(--space-5); align-items:start; }
+.grid2.iguales { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+@media (max-width:720px) { .grid2, .grid2.iguales { grid-template-columns:1fr; } }
+.escena { min-width:0; } .escena svg { width:100%; height:auto; display:block; }
+.derecha { display:flex; flex-direction:column; gap:var(--space-4); min-width:0; }
+
+/* esquema */
+.linea { stroke:var(--diag-bus); stroke-width:3; fill:none; stroke-linecap:round; stroke-linejoin:round; transition:stroke 250ms ease-out; }
+.linea.uno { stroke:var(--vitor); } .linea.cero { stroke:var(--tinta); } .linea.x { stroke:var(--dorado-texto); stroke-dasharray:3 5; }
+.puerta { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2.5; stroke-linejoin:round; transition:fill 250ms ease-out; }
+.puerta.activa { fill:var(--dorado-suave); stroke:var(--dorado-texto); }
+.burbuja { fill:var(--papel-elevado); stroke:var(--tinta); stroke-width:2.5; }
+.nodo { fill:var(--tinta); }
+.pin { font-family:var(--font-display); font-size:17px; font-weight:600; fill:var(--tinta); }
+.ref { font-family:var(--font-mono); font-size:12px; fill:var(--tinta-suave); }
+.chip { rx:5; }
+.chip.uno { fill:var(--vitor); } .chip.cero { fill:var(--papel-hundido); stroke:var(--piedra); stroke-width:1.5; } .chip.x { fill:var(--dorado); }
+.chip.marca { stroke:var(--dorado-texto); stroke-width:3; }
+.chip-txt { font-family:var(--font-mono); font-size:15px; font-weight:600; }
+.chip-txt.uno { fill:var(--sobre-vitor); } .chip-txt.cero { fill:var(--tinta); } .chip-txt.x { fill:var(--tinta); }
+.caja-mod { fill:none; stroke:var(--piedra-fuerte); stroke-width:1.5; stroke-dasharray:6 5; rx:12; }
+
+/* controles */
+.ctl-grid { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2); }
+@media (max-width:420px) { .ctl-grid { grid-template-columns:1fr; } }
+.fuente { display:grid; grid-template-columns:auto 1fr; gap:var(--space-2); align-items:center; padding:var(--space-2) var(--space-3); border:1px solid var(--piedra); border-radius:var(--radius-md); font-size:15px; }
+.fuente .nombre { font-family:var(--font-mono); font-weight:600; font-size:15px; }
+.fuente .nombre small { display:block; font:400 11px/14px var(--font-sans); color:var(--tinta-suave); letter-spacing:.04em; }
+.seg { display:inline-flex; border:1px solid var(--piedra-fuerte); border-radius:var(--radius-sm); overflow:hidden; justify-self:end; }
+.seg button { font:600 16px/22px var(--font-mono); width:38px; height:38px; border:0; border-left:1px solid var(--piedra); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.seg button:first-child { border-left:0; }
+.seg button[aria-pressed="true"].v0 { background:var(--tinta); color:var(--papel); }
+.seg button[aria-pressed="true"].v1 { background:var(--vitor); color:var(--sobre-vitor); }
+.seg button[aria-pressed="true"].vx { background:var(--dorado); color:var(--tinta); }
+.seg button:focus-visible, .boton:focus-visible, .opcion:focus-visible { outline:2px solid var(--foco); outline-offset:2px; }
+.boton { font:700 15px/20px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.boton-primario { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.boton-discreto { background:transparent; border-color:transparent; color:var(--vitor); }
+.boton:disabled { opacity:.45; cursor:not-allowed; }
+.fila { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; }
+.lectura { font-size:15px; line-height:22px; color:var(--tinta-suave); margin:0; }
+.lectura strong { color:var(--tinta); }
+.modo { display:inline-flex; align-items:center; gap:var(--space-2); font-size:15px; font-weight:700; padding:var(--space-2) var(--space-3); border-radius:var(--radius-pill); }
+.modo.set { background:var(--vitor-suave); color:var(--vitor); } .modo.reset { background:var(--centenario-suave); color:var(--centenario); }
+.modo.mem { background:var(--papel-hundido); color:var(--tinta-suave); } .modo.inv { background:var(--dorado-suave); color:var(--dorado-texto); }
+
+table.tv { border-collapse:collapse; font-family:var(--font-mono); font-size:16px; }
+.tv th { font-family:var(--font-display); font-weight:600; padding:var(--space-2) var(--space-3); border-bottom:2px solid var(--tinta); text-align:center; }
+.tv td { padding:var(--space-2) var(--space-3); text-align:center; border-bottom:1px solid var(--piedra); }
+.tv th:nth-child(3), .tv td:nth-child(3) { border-left:2px solid var(--tinta); }
+.tv th:nth-child(5), .tv td:nth-child(5) { text-align:left; font-family:var(--font-sans); font-size:15px; }
+.tv tr.activa td { background:var(--dorado); font-weight:600; }
+
+/* traza de eventos */
+ol.traza { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:var(--space-2); font-size:15px; line-height:22px; }
+ol.traza li { display:grid; grid-template-columns:24px 1fr; gap:var(--space-2); align-items:start; }
+ol.traza .n { width:22px; height:22px; border-radius:50%; display:inline-grid; place-items:center; font:600 12px var(--font-mono); background:var(--papel-hundido); color:var(--tinta-suave); border:1px solid var(--piedra); margin-top:1px; }
+ol.traza li.asig .n { background:var(--tinta); color:var(--papel); border-color:var(--tinta); }
+ol.traza li.ultimo { background:var(--dorado-suave); border-radius:var(--radius-sm); }
+ol.traza .igual { color:var(--tinta-suave); }
+
+/* banco de pruebas */
+.pasos { display:flex; flex-wrap:wrap; gap:var(--space-1); align-items:center; font-size:14px; }
+.paso { display:inline-flex; align-items:center; gap:6px; padding:3px 10px 3px 3px; border-radius:var(--radius-pill); color:var(--tinta-suave); }
+.paso .n { width:22px; height:22px; border-radius:50%; display:inline-grid; place-items:center; font:600 12px var(--font-mono); background:var(--papel-hundido); color:var(--tinta-suave); border:1px solid var(--piedra); }
+.paso.hecho .n { background:var(--papel-elevado); color:var(--correcto); border-color:var(--correcto); }
+.paso.actual { background:var(--dorado); color:var(--tinta); font-weight:700; }
+.paso.actual .n { background:var(--tinta); color:var(--papel); border-color:var(--tinta); }
+.prediccion { display:grid; gap:var(--space-3); padding:var(--space-4); border:1px solid var(--piedra); border-radius:var(--radius-md); }
+.prediccion .fila-p { display:flex; flex-wrap:wrap; gap:var(--space-4); align-items:center; }
+.prediccion .fila-p > div { display:flex; align-items:center; gap:var(--space-2); font-family:var(--font-mono); font-weight:600; }
+.pie { font-size:13px; line-height:18px; color:var(--tinta-suave); }
+.resumen { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--space-3); }
+.tarjeta { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); background:var(--papel-elevado); font-size:15px; line-height:22px; }
+.tarjeta code { display:inline-block; margin-bottom:var(--space-2); font-weight:600; color:var(--vitor); }
+.carrera { border:1px solid var(--piedra); border-radius:var(--radius-md); padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-3); min-width:0; }
+.carrera h3 code { font-size:17px; }
+.carrera .final { font-size:15px; font-weight:700; }
+
+/* pregunta tipo test */
+.opciones { display:flex; flex-direction:column; gap:var(--space-2); }
+.opcion { text-align:left; font:400 15px/22px var(--font-sans); padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.opcion[aria-pressed="true"] { border-color:var(--vitor); box-shadow:inset 0 0 0 1px var(--vitor); }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+.nav-leccion{max-width:960px;margin:0 auto var(--space-5);display:flex;justify-content:space-between;gap:var(--space-3);font-size:14px;flex-wrap:wrap}.nav-leccion a{color:var(--centenario)}.nav-leccion span{color:var(--tinta-suave)}
+footer{max-width:960px;margin:48px auto 0;font-size:13px;line-height:18px;color:var(--tinta-suave)}footer a{color:var(--vitor)}
+.pestanas { display:flex; flex-wrap:wrap; gap:var(--space-2); }
+.pestana { font:700 15px/20px var(--font-sans); padding:var(--space-2) var(--space-3); border-radius:var(--radius-pill); border:1px solid var(--piedra-fuerte); background:var(--papel-elevado); color:var(--tinta); cursor:pointer; }
+.pestana code { background:transparent; padding:0; font-size:14px; color:inherit; }
+.pestana[aria-selected="true"] { background:var(--vitor); border-color:var(--vitor); color:var(--sobre-vitor); }
+.pestana:focus-visible { outline:2px solid var(--foco); outline-offset:2px; }
+.ajustes { display:flex; flex-wrap:wrap; gap:var(--space-3); align-items:stretch; }
+.ajustes > * { flex:1 1 220px; }
+.rango { display:flex; flex-direction:column; gap:var(--space-2); padding:var(--space-2) var(--space-3); border:1px solid var(--piedra); border-radius:var(--radius-md); font-size:14px; }
+.rango .nombre { font-weight:700; } .rango output { font-family:var(--font-mono); color:var(--vitor); }
+.rango input { width:100%; accent-color:var(--vitor); }
+.seg button.ancho { width:auto; padding:0 var(--space-3); font-family:var(--font-sans); font-size:14px; }
+.eje { stroke:var(--tinta-suave); stroke-width:1.5; } .tick { stroke:var(--piedra-fuerte); stroke-width:1; } .tick.mayor { stroke:var(--tinta-suave); stroke-width:1.5; }
+.traza-onda { fill:none; stroke:var(--vitor); stroke-width:3; stroke-linejoin:round; }
+.banda-x { fill:var(--dorado-suave); stroke:var(--dorado-texto); stroke-width:1.5; stroke-dasharray:3 4; }
+.futuro { fill:var(--papel-hundido); opacity:.55; }
+.cursor { stroke:var(--centenario); stroke-width:1.5; stroke-dasharray:4 3; } .cursor-t { fill:var(--centenario); font-weight:600; }
+.llave { fill:none; stroke:var(--tinta-suave); stroke-width:1.5; } .llave-t { fill:var(--tinta); }
+pre.consola .aviso-fin { color:var(--piedra); font-style:italic; }
+.onda-cont { overflow-x:auto; } .onda-cont svg { min-width:540px; }
+.comparativa { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:var(--space-3); }
+.comparativa h3 { margin-bottom:var(--space-2); } .comparativa h3 code { font-size:17px; color:var(--vitor); margin:0; }
+.comparativa ul { margin:0; padding-left:20px; }
+</style>
+</head>
+<body>
+<nav class="nav-leccion" aria-label="Navegación de la lección"><a href="index.html">← Índice de la sesión 6</a><span>4</span><span><a href="biestable-rs-reloj.html">← Biestable RS con reloj</a> · Siguiente: reloj en el banco de pruebas (próximamente)</span></nav>
+<div class="wrap">
+<header class="prosa">
+  <div class="cabecera">
+    <img alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%236b5f55'%3E%3Crect x='18' y='2' width='4' height='8' rx='1'/%3E%3Crect x='30' y='2' width='4' height='8' rx='1'/%3E%3Crect x='42' y='2' width='4' height='8' rx='1'/%3E%3Crect x='18' y='54' width='4' height='8' rx='1'/%3E%3Crect x='30' y='54' width='4' height='8' rx='1'/%3E%3Crect x='42' y='54' width='4' height='8' rx='1'/%3E%3Crect x='2' y='18' width='8' height='4' rx='1'/%3E%3Crect x='2' y='30' width='8' height='4' rx='1'/%3E%3Crect x='2' y='42' width='8' height='4' rx='1'/%3E%3Crect x='54' y='18' width='8' height='4' rx='1'/%3E%3Crect x='54' y='30' width='8' height='4' rx='1'/%3E%3Crect x='54' y='42' width='8' height='4' rx='1'/%3E%3C/g%3E%3Crect x='8' y='8' width='48' height='48' rx='12' fill='%23a8192b'/%3E%3Crect x='16' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='25' y='24' width='7' height='16' rx='2' fill='%23f7dddc' fill-opacity='.35'/%3E%3Crect x='34' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3Crect x='43' y='24' width='7' height='16' rx='2' fill='%23f8f4ec'/%3E%3C/svg%3E">
+    <span class="etiqueta">Computadores · Lógica digital</span>
+  </div>
+  <h1>Señal de reloj y bloque always</h1>
+  <p>El biestable del ejercicio anterior tiene una entrada de reloj. Hasta ahora la movíamos a mano, asignando <code>silvia=1</code> o <code>silvia=0</code> en el banco de pruebas. Un reloj de verdad cambia solo, una y otra vez, a ritmo constante. Para eso Verilog tiene el bloque <code>always</code>.</p>
+  <p>Un bloque <code>initial</code> se ejecuta <strong>una sola vez</strong>, desde el instante 0 hasta su última instrucción. Un bloque <code>always</code> hace lo mismo, pero <strong>vuelve a empezar</strong> cada vez que termina, mientras dure la simulación. Con una sola línea tenemos un reloj:</p>
+  <pre><span class="kw">always</span> #7 C=~C;</pre>
+  <p style="margin-top:var(--space-4)">Cada 7 unidades de tiempo, el registro <code>C</code> pasa a su valor complementario. Siete unidades en alto y siete en bajo: un reloj de <strong>periodo 14</strong>.</p>
+</header>
+
+<section>
+  <h2>Simulador</h2>
+  <div class="prosa"><p>Un banco de pruebas mínimo: un registro <code>C</code>, el bloque que lo mueve y un <code>$monitor</code> que lo vigila hasta que <code>$finish</code> para la simulación en t = 56. Avanza evento a evento, cambia el retardo y prueba a quitar la inicialización de <code>C</code>.</p></div>
+  <div class="panel">
+    <div class="pestanas" role="tablist" aria-label="Bloque que mueve el reloj">
+      <button class="pestana" role="tab" data-var="always" aria-selected="true"><code>always #n C=~C;</code></button>
+      <button class="pestana" role="tab" data-var="initial" aria-selected="false"><code>initial #n C=~C;</code></button>
+      <button class="pestana" role="tab" data-var="begin" aria-selected="false"><code>always begin … end</code></button>
+    </div>
+    <div class="ajustes" id="ajustes"></div>
+    <div class="escena onda-cont"><svg id="onda" viewBox="0 0 640 170" role="img" aria-labelledby="onda-t"><title id="onda-t">Cronograma de la señal C entre t = 0 y t = 56</title></svg></div>
+    <div class="grid2">
+      <div class="derecha"><pre id="codigo"></pre></div>
+      <div class="derecha">
+        <div class="fila"><span class="modo mem" id="reloj-t"></span><span class="modo" id="periodo"></span></div>
+        <p class="lectura" id="lectura" aria-live="polite"></p>
+        <div class="fila" id="acciones"></div>
+        <pre class="consola" id="consola"></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="prosa">
+  <h2>Cara a cara</h2>
+  <div class="comparativa">
+    <div class="tarjeta">
+      <h3><code>initial</code></h3>
+      <ul>
+        <li>Empieza en t = 0 y se ejecuta <strong>una vez</strong>.</li>
+        <li>Al llegar a su última instrucción, termina para siempre.</li>
+        <li>Sirve para fijar valores iniciales y para escribir la batería de estímulos del banco de pruebas.</li>
+      </ul>
+    </div>
+    <div class="tarjeta">
+      <h3><code>always</code></h3>
+      <ul>
+        <li>Empieza en t = 0 y, al terminar, <strong>vuelve a empezar</strong>.</li>
+        <li>Se repite mientras dure la simulación: hay que pararla con <code>$finish</code>.</li>
+        <li>Necesita algún retardo dentro; si no, se repetiría infinitas veces sin que avance el tiempo.</li>
+      </ul>
+    </div>
+  </div>
+  <p style="margin-top:var(--space-4)">Los dos son <strong>bloques</strong> del mismo tipo. Si tienen que contener más de una instrucción, se encierran entre <code>begin</code> y <code>end</code>, como de costumbre. Todos los bloques de un módulo arrancan a la vez en t = 0 y avanzan <strong>en paralelo</strong>. Por eso el <code>initial</code> que vigila y para la simulación convive con el <code>always</code> que mueve el reloj.</p>
+</section>
+
+<section class="prosa">
+  <h2>Compruébalo</h2>
+  <div id="retos" style="display:flex;flex-direction:column;gap:var(--space-6)"></div>
+  <p class="pie" style="margin-top:var(--space-4)">Las respuestas se corrigen en la página; nada se envía a ningún sitio.</p>
+</section>
+
+<section class="prosa">
+  <h2>Qué conviene saber</h2>
+  <div class="nota nota-cuidado">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
+    <div><b>Inicializa el registro del reloj</b><div class="cuerpo">Un <code>reg</code> empieza valiendo <code>x</code>, y el complemento de x es x. Sin un <code>initial C=0;</code>, <code>always #7 C=~C;</code> se ejecuta cada 7 unidades, pero C no cambia nunca: <code>$monitor</code> solo imprime <code>0 C=x</code>. La variante con <code>begin … end</code> no tiene este problema, porque asigna 1 y 0 explícitamente.</div></div>
+  </div>
+  <p style="margin-top:var(--space-4)"></p>
+  <div class="nota nota-cuidado">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2 17h16L10 3zm0 5v4m0 2v1"/></svg>
+    <div><b>Un always no termina nunca</b><div class="cuerpo">Con un reloj, la simulación siempre tiene eventos pendientes y no se acaba sola. Cierra el banco de pruebas con un <code>$finish</code> (lo viste en <a href="../05-encaminadores-sumadores/parar-simulacion.html" style="color:inherit">Parar la simulación</a>). Y no olvides el retardo: Icarus rechaza <code>always C=~C;</code> al compilar, con el aviso <em>always process does not have any delay</em>, porque sería un bucle infinito en t = 0.</div></div>
+  </div>
+  <p style="margin-top:var(--space-4)"></p>
+  <div class="nota nota-idea">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 16h4"/></svg>
+    <div><b>Idea</b><div class="cuerpo">Con <code>C=~C</code> el reloj pasa la mitad del periodo en alto y la otra mitad en bajo. Con <code>begin #a C=1; #b C=0; end</code> el periodo es a + b y el tiempo en alto es b, así que puedes hacer relojes asimétricos. Si el último cambio coincide con el <code>$finish</code> (por ejemplo, en t = 56 con #7), Icarus lo ejecuta igualmente y <code>$monitor</code> imprime esa última línea después del aviso de <code>$finish</code>.</div></div>
+  </div>
+</section>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var FIN = 56;
+  var NOT = function(v){ return v===0 ? 1 : v===1 ? 0 : 'x'; };
+  var cfg = { blq:'always', n:7, a:5, b:9, ini:'0' };
+  var est = null;
+
+  /* Lista de despertares del bloque hasta t = 56 (incluido): en cada uno, qué instrucción se ejecuta y qué vale C después. */
+  function calcular(){
+    var c = cfg.ini==='x' ? 'x' : +cfg.ini, ev = [];
+    if (cfg.blq==='initial'){ if (cfg.n<=FIN){ var nv = NOT(c); ev.push({t:cfg.n, ins:0, antes:c, v:nv, it:1}); c = nv; } }
+    else if (cfg.blq==='always'){ for (var t=cfg.n, it=1; t<=FIN; t+=cfg.n, it++){ var v = NOT(c); ev.push({t:t, ins:0, antes:c, v:v, it:it}); c = v; } }
+    else { var t2 = 0, k = 0, it2 = 1; while (true){ var d = k%2===0 ? cfg.a : cfg.b; t2 += d; if (t2>FIN) break; var val = k%2===0 ? 1 : 0; ev.push({t:t2, ins:k%2, antes:c, v:val, it:it2}); c = val; if (k%2===1) it2++; k++; } }
+    return ev;
+  }
+  function nuevo(){ est = { ev:calcular(), paso:0 }; render(); }
+  var val0 = function(){ return cfg.ini==='x' ? 'x' : +cfg.ini; };
+  function cAhora(){ return est.paso ? est.ev[est.paso-1].v : val0(); }
+  function tAhora(){ return est.paso ? est.ev[est.paso-1].t : 0; }
+
+  function renderAjustes(){
+    var A = $('ajustes'), h = '';
+    var rango = function(k, et){ return '<label class="rango"><span class="nombre">'+et+' <output>'+cfg[k]+'</output></span><input type="range" min="1" max="14" step="1" value="'+cfg[k]+'" data-k="'+k+'"></label>'; };
+    if (cfg.blq==='begin') h += rango('a','Retardo antes de C=1: #') + rango('b','Retardo antes de C=0: #');
+    else h += rango('n','Retardo: #');
+    h += '<div class="fuente"><span class="nombre">Valor inicial de C<small>initial C=…;</small></span><span class="seg" role="group" aria-label="Valor inicial de C">'+[['0','0'],['1','1'],['x','sin']].map(function(o){ return '<button class="v'+(o[0]==='x'?'x':o[0])+(o[0]==='x'?' ancho':'')+'" data-ini="'+o[0]+'" aria-pressed="'+(cfg.ini===o[0])+'">'+o[1]+'</button>'; }).join('')+'</span></div>';
+    A.innerHTML = h;
+    A.querySelectorAll('input[type=range]').forEach(function(r){ r.addEventListener('input', function(){ cfg[r.dataset.k] = +r.value; r.previousElementSibling.querySelector('output').textContent = r.value; nuevo(); }); });
+    A.querySelectorAll('[data-ini]').forEach(function(b){ b.addEventListener('click', function(){ cfg.ini = b.dataset.ini; renderAjustes(); nuevo(); }); });
+  }
+
+  /* -------- cronograma -------- */
+  function onda(){
+    var X = function(t){ return 40 + t*(580/FIN); }, YH = 40, YL = 100;
+    var h = '<line class="eje" x1="40" y1="128" x2="620" y2="128"/>';
+    for (var t=0; t<=FIN; t++){ var mayor = t%7===0; h += '<line class="tick'+(mayor?' mayor':'')+'" x1="'+X(t)+'" y1="128" x2="'+X(t)+'" y2="'+(mayor?136:132)+'"/>'; if (mayor) h += '<text class="ref" x="'+X(t)+'" y="152" text-anchor="middle">'+t+'</text>'; }
+    h += '<text class="pin" x="8" y="76">C</text><text class="ref" x="30" y="'+(YH+4)+'" text-anchor="end">1</text><text class="ref" x="30" y="'+(YL+4)+'" text-anchor="end">0</text>';
+    var tNow = tAhora(), fin = est.paso===est.ev.length, tLim = fin ? FIN : tNow;
+    // tramos hasta el instante actual
+    var tramos = [], c = val0(), t0 = 0;
+    est.ev.slice(0, est.paso).forEach(function(e){ tramos.push([t0, e.t, c]); c = e.v; t0 = e.t; });
+    tramos.push([t0, tLim, c]);
+    var d = '', prevY = null;
+    tramos.forEach(function(tr){
+      if (tr[1] < tr[0]) return;
+      if (tr[2]==='x'){ h += '<rect class="banda-x" x="'+X(tr[0])+'" y="'+YH+'" width="'+Math.max(0,X(tr[1])-X(tr[0]))+'" height="'+(YL-YH)+'"/>'; prevY = null; return; }
+      var y = tr[2]===1 ? YH : YL;
+      d += (prevY===null ? 'M'+X(tr[0])+' '+y : ' L'+X(tr[0])+' '+y) + ' L'+X(tr[1])+' '+y;
+      prevY = y;
+    });
+    if (d) h += '<path class="traza-onda" d="'+d+'"/>';
+    // futuro en gris
+    if (!fin) h += '<rect class="futuro" x="'+X(tNow)+'" y="'+(YH-8)+'" width="'+(X(FIN)-X(tNow))+'" height="'+(YL-YH+16)+'"/>';
+    h += '<line class="cursor" x1="'+X(tLim)+'" y1="24" x2="'+X(tLim)+'" y2="128"/><text class="ref cursor-t" x="'+X(tLim)+'" y="18" text-anchor="middle">t = '+tLim+'</text>';
+    // marca del periodo si se ve completo
+    var sub = est.ev.slice(0, est.paso).filter(function(e){ return e.v===1 && e.antes!==1; });
+    if (sub.length>=2){ var x1 = X(sub[0].t), x2 = X(sub[1].t); h += '<path class="llave" d="M'+x1+' 30 L'+x1+' 24 L'+x2+' 24 L'+x2+' 30"/><text class="ref llave-t" x="'+((x1+x2)/2)+'" y="20" text-anchor="middle">periodo '+(sub[1].t-sub[0].t)+'</text>'; }
+    $('onda').innerHTML = h;
+  }
+
+  function codigo(){
+    var e = est.paso ? est.ev[est.paso-1] : null, ins = e ? e.ins : -1;
+    var hl = function(txt, i){ return ins===i ? '<span class="hl">'+txt+'</span>' : txt; };
+    var ini = cfg.ini==='x' ? '  <span class="cm">// sin initial C=…; C empieza en x</span>' : '  <span class="kw">initial</span> C='+cfg.ini+';';
+    var blq;
+    if (cfg.blq==='always') blq = '  '+hl('<span class="kw">always</span> #'+cfg.n+' C=~C;', 0);
+    else if (cfg.blq==='initial') blq = '  '+hl('<span class="kw">initial</span> #'+cfg.n+' C=~C;', 0);
+    else blq = '  <span class="kw">always</span>\n    <span class="kw">begin</span>\n      '+hl('#'+cfg.a+' C=1;', 0)+'\n      '+hl('#'+cfg.b+' C=0;', 1)+'\n    <span class="kw">end</span>';
+    $('codigo').innerHTML = '<span class="kw">module</span> <span class="id">TestReloj</span>;\n  <span class="kw">reg</span> C;\n\n'+ini+'\n'+blq+'\n\n  <span class="kw">initial</span>\n    <span class="kw">begin</span>\n      $monitor($time," C=%b", C);\n      #56 $finish;\n    <span class="kw">end</span>\n<span class="kw">endmodule</span>';
+  }
+
+  function consola(){
+    var lineas = [String(0).padStart(20,' ')+' C='+val0()], fin = est.paso===est.ev.length;
+    est.ev.slice(0, est.paso).forEach(function(e){
+      if (e.v===e.antes) return;
+      if (e.t===FIN && fin) lineas.push('<span class="aviso-fin">reloj.v:'+(cfg.blq==='begin'?14:10)+': $finish called at '+FIN+' (1s)</span>');
+      lineas.push(String(e.t).padStart(20,' ')+' C='+e.v);
+    });
+    if (fin && !lineas.some(function(l){ return l.indexOf('$finish')>=0; })) lineas.push('<span class="aviso-fin">reloj.v:'+(cfg.blq==='begin'?14:10)+': $finish called at '+FIN+' (1s)</span>');
+    $('consola').innerHTML = lineas.map(function(l){ return l.replace(/C=x/g,'C=<span class="x">x</span>'); }).join('\n');
+  }
+
+  function render(){
+    onda(); codigo(); consola();
+    var fin = est.paso===est.ev.length, e = est.paso ? est.ev[est.paso-1] : null;
+    $('reloj-t').textContent = 't = '+(fin ? FIN : tAhora())+(fin ? ' · simulación terminada' : '');
+    var P = $('periodo');
+    if (cfg.blq==='initial'){ P.className = 'modo inv'; P.textContent = 'Un solo cambio: no es un reloj'; }
+    else if (cfg.blq==='always' && cfg.ini==='x'){ P.className = 'modo inv'; P.textContent = 'C se queda en x'; }
+    else if (cfg.blq==='always'){ P.className = 'modo set'; P.textContent = 'Periodo 2 · '+cfg.n+' = '+(2*cfg.n); }
+    else { P.className = 'modo set'; P.textContent = 'Periodo '+cfg.a+' + '+cfg.b+' = '+(cfg.a+cfg.b)+' · en alto '+cfg.b; }
+    var t;
+    if (!e) t = 't = 0: todos los bloques arrancan a la vez. '+(cfg.ini==='x' ? 'Nadie da valor a C, así que vale x.' : '<code>initial C='+cfg.ini+';</code> fija el valor de partida.')+' El bloque '+(cfg.blq==='initial'?'<code>initial</code>':'<code>always</code>')+' empieza esperando su primer retardo.';
+    else {
+      var cambio = e.v!==e.antes ? 'C pasa de '+e.antes+' a <strong>'+e.v+'</strong>.' : 'C era '+e.antes+' y '+(e.antes==='x' ? 'el complemento de x es x: <strong>no cambia</strong>, y $monitor no imprime nada.' : 'sigue en '+e.v+'.');
+      if (cfg.blq==='initial') t = 't = '+e.t+': se ejecuta <code>C=~C</code>. '+cambio+' El bloque initial ha llegado al final y <strong>no vuelve a ejecutarse</strong>.';
+      else if (cfg.blq==='always') t = 't = '+e.t+': '+e.it+'.ª vuelta del always. '+cambio+(est.paso<est.ev.length ? ' Al terminar, vuelve a empezar y espera otras '+cfg.n+' unidades.' : '');
+      else t = 't = '+e.t+': se ejecuta <code>C='+e.v+'</code> ('+e.it+'.ª vuelta). '+cambio+(e.ins===1 && est.paso<est.ev.length ? ' Se llega al <code>end</code> y el bloque vuelve al <code>begin</code>.' : '');
+    }
+    if (fin) t += ' En t = 56 <code>$finish</code> detiene la simulación.';
+    $('lectura').innerHTML = t;
+    $('acciones').innerHTML = '<button class="boton '+(fin?'':'boton-primario')+'" id="sig"'+(fin?' disabled':'')+'>Siguiente evento</button><button class="boton" id="todo"'+(fin?' disabled':'')+'>Hasta t = 56</button><button class="boton boton-discreto" id="rei"'+(est.paso?'':' disabled')+'>Reiniciar</button>';
+    $('sig').addEventListener('click', function(){ est.paso++; render(); var b = $('sig'); (b.disabled ? $('rei') : b).focus(); });
+    $('todo').addEventListener('click', function(){ est.paso = est.ev.length; render(); $('rei').focus(); });
+    $('rei').addEventListener('click', function(){ est.paso = 0; render(); $('sig').focus(); });
+  }
+  document.querySelectorAll('.pestana').forEach(function(b){ b.addEventListener('click', function(){ cfg.blq = b.dataset.var; document.querySelectorAll('.pestana').forEach(function(x){ x.setAttribute('aria-selected', x===b ? 'true' : 'false'); }); renderAjustes(); nuevo(); }); });
+  renderAjustes(); nuevo();
+
+  /* -------- preguntas -------- */
+  var RETOS = [
+    { q:'¿Qué periodo tiene el reloj <code>always #5 C=~C;</code>?',
+      o:[ ['5 unidades de tiempo.', false, 'Cada 5 unidades C cambia, pero un periodo completo incluye un tramo en alto y otro en bajo: 5 + 5.'],
+          ['10 unidades de tiempo.', true, 'Eso es: 5 en un nivel y 5 en el otro. En general, <code>always #n C=~C;</code> da periodo 2n.'],
+          ['2,5 unidades de tiempo.', false, 'El retardo es lo que dura <em>cada medio periodo</em>, no el periodo entero; el periodo es más largo, no más corto.'],
+          ['Depende del valor inicial de C.', false, 'El valor inicial decide si el reloj empieza en alto o en bajo (o si se queda en x), pero no cambia el periodo.'] ] },
+    { q:'Quitas la línea <code>initial C=0;</code> y dejas <code>always #7 C=~C;</code>. ¿Qué pasa?',
+      o:[ ['C empieza en 0 por defecto y todo funciona igual.', false, 'Los registros de Verilog no empiezan en 0: empiezan en x. Prueba la opción «sin» del simulador.'],
+          ['C se queda en x durante toda la simulación.', true, 'Así es: ~x = x. El bloque always se ejecuta cada 7 unidades, pero C nunca cambia y <code>$monitor</code> solo imprime la línea de t = 0.'],
+          ['Icarus da un error de compilación.', false, 'Compila sin avisos: el código es correcto, solo que no hace lo que queremos. Por eso es un error fácil de cometer.'],
+          ['C alterna entre x y z.', false, 'z aparece en cables sin conductor, no en registros. Y el complemento de x es x, no z.'] ] },
+    { q:'¿Y si escribes <code>always C=~C;</code>, sin retardo?',
+      o:[ ['Icarus no lo compila: sería un bucle infinito en t = 0.', true, 'Correcto. Sin retardo, el bloque se repetiría sin fin sin que avance el tiempo. Icarus lo detecta y se niega a elaborar el diseño.'],
+          ['Genera un reloj de periodo 2.', false, 'Sin <code>#</code> no hay espera: el tiempo no avanzaría nunca.'],
+          ['C cambia una vez y el bloque termina.', false, 'Ese es el comportamiento de <code>initial</code>. Un always vuelve a empezar siempre.'],
+          ['Funciona, pero la simulación va más rápido.', false, 'No hay forma de que funcione: el simulador no podría pasar nunca de t = 0.'] ] },
+    { q:'Quieres un reloj de periodo 20 que esté en alto solo 5 unidades, partiendo de <code>initial C=0;</code>. ¿Cuál escribes?',
+      o:[ ['<code>always begin #15 C=1; #5 C=0; end</code>', true, 'Eso es: 15 unidades en bajo, sube, 5 en alto, baja. Periodo 15 + 5 = 20, en alto 5. Compruébalo con la tercera pestaña del simulador.'],
+          ['<code>always begin #5 C=1; #15 C=0; end</code>', false, 'El periodo es 20, pero el segundo retardo es lo que dura en alto: estaría 15 unidades en alto y 5 en bajo.'],
+          ['<code>always #10 C=~C;</code>', false, 'Periodo 20, sí, pero 10 en alto y 10 en bajo.'],
+          ['<code>always #5 C=~C;</code>', false, 'Eso da periodo 10, con 5 en alto y 5 en bajo.'] ] }
+  ];
+  var elec = RETOS.map(function(){ return null; });
+  function renderRetos(){
+    $('retos').innerHTML = RETOS.map(function(r, i){
+      var h = '<div><p style="margin:0 0 var(--space-3)"><strong>'+(i+1)+'.</strong> '+r.q+'</p><div class="opciones">'+r.o.map(function(o, j){ return '<button class="opcion" data-i="'+i+'" data-j="'+j+'" aria-pressed="'+(elec[i]===j)+'">'+o[0]+'</button>'; }).join('')+'</div>';
+      if (elec[i]!==null){ var o = r.o[elec[i]]; h += '<div class="nota '+(o[1]?'nota-correcto':'nota-incorrecto')+'" role="status" style="margin-top:var(--space-3)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+(o[1]?'M3 10l4 4 10-9':'M5 5l10 10M15 5 5 15')+'"/></svg><div><b>'+(o[1]?'Correcto':'Incorrecto')+'</b><div class="cuerpo">'+o[2]+'</div></div></div>'; }
+      return h + '</div>';
+    }).join('');
+    $('retos').querySelectorAll('.opcion').forEach(function(b){ b.addEventListener('click', function(){ elec[+b.dataset.i] = +b.dataset.j; renderRetos(); }); });
+  }
+  renderRetos();
+})();
+</script>
+<footer>Computadores I · Grado en Ingeniería Informática · Daniel Hernández de la Iglesia (PB3)<br>Material de prácticas basado en <a href="http://avellano.usal.es/~compi/">la web de la asignatura</a>.</footer>
+</body>
+</html>
